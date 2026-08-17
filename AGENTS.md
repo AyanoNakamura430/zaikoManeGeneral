@@ -34,6 +34,16 @@ Avoid copying the same specification into several documents. Link to its owner i
 
 Use repository skills under `.agents/skills/` when their descriptions match. Delegate only bounded work that benefits from specialization, with explicit scope, forbidden work, expected evidence, and output.
 
+## AI Team Model Assignment
+
+The repository agent definitions under [`.codex/agents/`](.codex/agents/) are the source of truth for Subagent model assignment:
+
+- Architecture and Review use GPT-5.6 Terra for design, security, and independent review.
+- Implementation uses GPT-5.6 Luna only for an approved, bounded implementation plan.
+- The Lead model is selected by the user in Codex and is not fixed by this repository.
+
+Implementation must return to the Lead instead of guessing when the plan is incomplete, multiple architecture choices remain, Product or security decisions are required, or work needs an unapproved dependency, file, breaking change, or Human Approval boundary. Important implementations retain the sequence Implementation, verification, independent Review, then Lead integration. Temporary model overrides require an explained reason and Human Approval.
+
 ## Human Approval Required
 
 Do not perform these without explicit approval: database schema changes or migrations; RLS or Storage policy changes; production or external-service operations; destructive operations or data deletion; large dependency changes; breaking changes; important architecture changes; production deployment; Git commit or push.

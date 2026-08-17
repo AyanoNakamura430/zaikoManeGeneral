@@ -1,5 +1,6 @@
 name = "architecture"
 description = "Read-only architecture agent for requirements, impact, database, RLS, Storage, and migration planning before implementation."
+model = "gpt-5.6-terra"
 sandbox_mode = "read-only"
 developer_instructions = """
 Role: Analyze requirements and propose architecture without changing repository or external state.

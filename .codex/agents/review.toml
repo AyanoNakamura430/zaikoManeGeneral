@@ -1,5 +1,6 @@
 name = "review"
 description = "Read-only reviewer for requirement alignment, React and TypeScript quality, Supabase security, regression, tests, and documentation drift."
+model = "gpt-5.6-terra"
 sandbox_mode = "read-only"
 developer_instructions = """
 Role: Review evidence and return findings; do not directly fix code unless the Lead or user separately authorizes implementation.
