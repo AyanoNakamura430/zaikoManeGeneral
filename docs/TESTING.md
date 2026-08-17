@@ -9,7 +9,7 @@ Current repository facts:
 - no project TypeScript configuration or independent typecheck script;
 - no lint or formatter configuration;
 - no unit, component, integration, database-security, or E2E test configuration;
-- build is `vite build`, whose success remains unverified because it may update workspace `dist`;
+- the canonical artifact-safe build check is `npm run verify:build` (use `npm.cmd` from Windows PowerShell); it successfully built to an OS temporary directory without changing protected workspace artifacts on 2026-08-17;
 - no CI configuration is established.
 
 Do not report any check as successful until it has actually run successfully. Reports distinguish passed, failed, unavailable, deliberately omitted, and environment-dependent checks.
@@ -128,6 +128,15 @@ A required unavailable environment blocks release; it is not converted into a pa
 
 ## Artifact-Safe Verification
 
+The verified runtime baseline is declared only in `package.json`: Node `22.23.2`, npm `11.6.2`, and package manager `npm@11.6.2`. Do not add a second runtime marker unless a later approved CI or version-manager requirement establishes its ownership.
+
+Canonical local interfaces:
+
+- `npm run verify:build` (`npm.cmd run verify:build` from Windows PowerShell) runs the existing Vite build with its output redirected to a validated unique OS temporary directory.
+- `npm run verify:self-test` (`npm.cmd run verify:self-test` from Windows PowerShell) exercises the verification boundary in disposable OS-temporary Git fixtures.
+
+The wrapper accepts only registered task names and no additional arguments. A future typecheck, lint, test, coverage, generated-type, or browser task must be added to the internal allowlist by its separately approved work package. It must define fixed arguments, redirect supported outputs to OS temporary storage, and add any unavoidable workspace fallback output to the protected manifest.
+
 All verification outputs must use a validated unique OS/runner temporary root where supported, including:
 
 - Vite build output and cache;
@@ -141,11 +150,15 @@ Keep normal developer/deployment `build` behavior separate from a required tempo
 
 Before and after verification:
 
-- compare full Git status including untracked files;
+- compare full Git status including untracked files and content manifests for tracked and non-ignored untracked files, so changes to an already-dirty file are detectable;
 - compare protected ignored-output manifests for `dist`, Vite cache, coverage, test reports, Playwright reports, TypeScript build information, and committed generated types;
 - fail when a protected workspace artifact is created or modified;
 - never display environment values or secret-file contents;
 - delete only resolved paths proven to be within the task-specific temporary root.
+
+The protected ignored paths currently include `dist`, `.vite`, `node_modules/.vite`, `coverage`, `test-results`, `playwright-report`, and `*.tsbuildinfo`. The verifier does not traverse `.git`, ignored `.env*`, or all of `node_modules`, and it does not follow symlinks while creating manifests. If Git explicitly lists a tracked or non-ignored `.env*` path, the verifier records only file type, size, and modification-time metadata; it never reads or hashes its contents. Metadata-only monitoring can detect ordinary writes but cannot prove that same-size content with a preserved timestamp is unchanged. Symlink targets are hashed for comparison but the target is not followed, and target values and hashes are never logged.
+
+Detection is non-destructive. The verifier reports repository-relative mutation paths but never resets, restores, cleans, removes, or otherwise rolls back workspace files. A detected mutation requires human review.
 
 Git status alone is insufficient because ignored generated files may have changed.
 

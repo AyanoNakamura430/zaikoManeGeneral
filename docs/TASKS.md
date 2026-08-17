@@ -43,8 +43,8 @@ This tracks phase status; requirements and design belong in their owning documen
 
 ## Phase 3 — Quality Foundation
 
-- [ ] WP1: Runtime and tool compatibility discovery with an approved implementation plan
-- [ ] WP2: Artifact-safe verification shell and temporary-output build check
+- [x] WP1: Runtime and tool compatibility discovery with an approved implementation plan
+- [x] WP2: Artifact-safe verification shell and temporary-output build check
 - [ ] WP3: Strict TypeScript foundation and legacy exclusion register
 - [ ] WP4: ESLint, Prettier, and architecture import gates
 - [ ] WP5: Vitest Domain unit-test foundation and coverage baseline
