@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Code"
+  short_description: "変更差分を要件・設計・安全性・回帰・docs整合性からレビュー"
+  default_prompt: "Use $review-code to review the current changes and classify findings by severity."

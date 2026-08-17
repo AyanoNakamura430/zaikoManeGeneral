@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create Implementation Plan"
+  short_description: "実装前に範囲・影響・承認境界・検証・完了条件を整理"
+  default_prompt: "Use $create-implementation-plan to prepare an approval-ready implementation plan."

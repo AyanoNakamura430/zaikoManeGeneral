@@ -1,0 +1,4 @@
+interface:
+  display_name: "Update Docs"
+  short_description: "コード変更に対応するsource of truthとタスク記録を同期"
+  default_prompt: "Use $update-docs to synchronize the relevant source-of-truth documents after code changes."

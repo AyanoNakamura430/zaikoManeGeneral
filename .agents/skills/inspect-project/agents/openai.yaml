@@ -1,0 +1,4 @@
+interface:
+  display_name: "Inspect Project"
+  short_description: "変更前にGit・docs・設定・対象コードと既知リスクを安全に調査"
+  default_prompt: "Use $inspect-project to inspect this repository safely before making changes."
