@@ -4,6 +4,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
 const strictSource = ["src/**/*.ts", "src/**/*.tsx"];
+const testSource = ["tests/**/*.ts", "tests/**/*.tsx"];
 const legacyExclusions = [
   "src/main.tsx",
   "src/app/App.tsx",
@@ -70,7 +71,7 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {
-    files: strictSource,
+    files: [...strictSource, ...testSource],
     languageOptions: {
       parserOptions: {
         projectService: true,

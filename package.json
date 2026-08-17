@@ -11,17 +11,25 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
-    "format:write": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings 0",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx,json}\"",
+    "format:write": "prettier --write \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx,json}\"",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\" --max-warnings 0",
     "lint:gates": "node scripts/lint-gates.mjs",
+    "test:coverage": "vitest run --config vitest.config.mjs --coverage",
+    "test:unit": "vitest run --config vitest.config.mjs",
+    "test:unit-self-test": "node scripts/vitest-self-test.mjs",
     "typecheck": "tsc --project tsconfig.json --noEmit",
+    "typecheck:test": "tsc --project tests/tsconfig.json --noEmit",
     "verify:build": "node scripts/verify.mjs build",
+    "verify:coverage": "node scripts/verify.mjs coverage",
     "verify:format": "node scripts/verify.mjs format",
     "verify:lint": "node scripts/verify.mjs lint",
     "verify:lint-gates": "node scripts/verify.mjs lint-gates",
     "verify:self-test": "node scripts/verify.mjs self-test",
-    "verify:typecheck": "node scripts/verify.mjs typecheck"
+    "verify:test-typecheck": "node scripts/verify.mjs test-typecheck",
+    "verify:typecheck": "node scripts/verify.mjs typecheck",
+    "verify:unit": "node scripts/verify.mjs unit",
+    "verify:unit-self-test": "node scripts/verify.mjs unit-self-test"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -87,6 +95,7 @@
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",
     "@vitejs/plugin-react": "4.7.0",
+    "@vitest/coverage-v8": "4.1.10",
     "eslint": "9.39.5",
     "eslint-plugin-jsx-a11y": "6.10.2",
     "eslint-plugin-react-hooks": "7.1.1",
@@ -94,7 +103,8 @@
     "tailwindcss": "4.1.12",
     "typescript": "6.0.3",
     "typescript-eslint": "8.67.0",
-    "vite": "6.3.5"
+    "vite": "6.3.5",
+    "vitest": "4.1.10"
   },
   "peerDependencies": {
     "react": "18.3.1",

@@ -7,18 +7,24 @@ import { spawn } from "node:child_process";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const protectedDirectories = ["dist", ".vite", "node_modules/.vite", "coverage", "test-results", "playwright-report"];
-const allowedTasks = new Set(["build", "format", "lint", "lint-gates", "self-test", "typecheck"]);
+const allowedTasks = new Set(["build", "coverage", "format", "lint", "lint-gates", "self-test", "test-typecheck", "typecheck", "unit", "unit-self-test"]);
 const npmTasks = new Map([
+  ["coverage", "test:coverage"],
   ["format", "format:check"],
   ["lint", "lint"],
   ["lint-gates", "lint:gates"],
+  ["test-typecheck", "typecheck:test"],
   ["typecheck", "typecheck"],
+  ["unit", "test:unit"],
+  ["unit-self-test", "test:unit-self-test"],
 ]);
+const testTasks = new Set(["coverage", "unit", "unit-self-test"]);
 
-function runProcess(command, args, cwd, capture = false) {
+function runProcess(command, args, cwd, capture = false, environment = process.env) {
   return new Promise((resolveProcess, reject) => {
     const child = spawn(command, args, {
       cwd,
+      env: environment,
       shell: false,
       windowsHide: true,
       stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit",
@@ -209,7 +215,7 @@ async function validatedNpmCli() {
   return canonical;
 }
 
-async function verifyCommand({ label, workspace, command, args, displayCommand, emit = true }) {
+async function verifyCommand({ label, workspace, command, args, displayCommand, environment, emit = true }) {
   let before;
   let commandResult = { code: 1 };
   let changes = [];
@@ -220,7 +226,8 @@ async function verifyCommand({ label, workspace, command, args, displayCommand, 
     before = await snapshot(workspace);
     temp = await createSafeTemp(label, workspace);
     const resolvedArgs = typeof args === "function" ? args(temp.path) : args;
-    commandResult = await runProcess(command, resolvedArgs, workspace, !emit);
+    const resolvedEnvironment = typeof environment === "function" ? environment(temp.path) : environment;
+    commandResult = await runProcess(command, resolvedArgs, workspace, !emit, resolvedEnvironment);
   } catch (error) {
     internalError = error;
   } finally {
@@ -321,7 +328,7 @@ async function runSelfTest() {
 async function main() {
   const [task, ...extra] = process.argv.slice(2);
   if (!allowedTasks.has(task) || extra.length > 0) {
-    console.error("Usage: node scripts/verify.mjs <build|format|lint|lint-gates|self-test|typecheck>");
+    console.error("Usage: node scripts/verify.mjs <build|coverage|format|lint|lint-gates|self-test|test-typecheck|typecheck|unit|unit-self-test>");
     return 3;
   }
   if (task === "self-test") return runSelfTest();
@@ -345,6 +352,7 @@ async function main() {
       command: process.execPath,
       args: [npmCli, "run", npmTasks.get(task)],
       displayCommand: `npm run ${npmTasks.get(task)}`,
+      environment: testTasks.has(task) ? (temp) => ({ ...process.env, ZAIKO_TEST_OUTPUT_DIR: temp }) : undefined,
     });
   return result.exitCode;
 }

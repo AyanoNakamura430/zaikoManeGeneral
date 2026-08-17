@@ -2,13 +2,15 @@
 
 ## Status and Evidence Boundary
 
-The Phase 2 quality architecture is approved. The artifact-safe verification shell, initial strict TypeScript foundation, and ESLint/Prettier architecture gates are implemented; later quality stages remain unimplemented.
+The Phase 2 quality architecture is approved. The artifact-safe verification shell, initial strict TypeScript foundation, ESLint/Prettier architecture gates, and WP5-A Vitest runner foundation are implemented. Production Domain tests and their coverage baseline remain pending in WP5-B; later quality stages remain unimplemented.
 
 Current repository facts:
 
 - the canonical artifact-safe strict typecheck is `npm run verify:typecheck` (use `npm.cmd` from Windows PowerShell); it completed without emitting files or changing protected workspace artifacts on 2026-08-17;
 - the canonical artifact-safe lint, architecture-gate, and format checks completed with zero warnings and without changing protected workspace artifacts on 2026-08-17;
-- no unit, component, integration, database-security, or E2E test configuration;
+- the canonical artifact-safe Vitest runner, runner self-test, test typecheck, and coverage command completed without changing protected workspace artifacts on 2026-08-17;
+- the current Vitest suite contains only a runner-foundation smoke test; there are no production Domain tests and no meaningful coverage baseline yet;
+- no component, integration, database-security, or E2E test configuration;
 - the canonical artifact-safe build check is `npm run verify:build` (use `npm.cmd` from Windows PowerShell); it successfully built to an OS temporary directory without changing protected workspace artifacts on 2026-08-17;
 - no CI configuration is established.
 
@@ -91,6 +93,10 @@ Vitest is the approved candidate. Critical scenarios include:
 - Auth-return allowlisting and open-redirect rejection;
 - provider error mapping and image partial-result types.
 
+WP5-A uses exact dev dependencies `vitest@4.1.10` and `@vitest/coverage-v8@4.1.10`, the Node test environment, explicit imports rather than globals, and a separate strict test TypeScript project at `tests/tsconfig.json`. The runner rejects focused `.only` tests and an empty test selection. Its self-test verifies successful, failing, focused-only, and no-test processes in OS-temporary fixtures.
+
+The repository currently has no active production module under `src/domain`. The single `tests/unit/vitest-foundation.test.ts` smoke test verifies the runner only and is excluded from production coverage. It must not be reported as a Domain behavior test or coverage baseline. WP5-B requires a separately approved first Domain slice and critical tests before WP5 can be completed.
+
 ### Component and Router Integration
 
 Use React Testing Library, user-event, DOM accessibility matchers, and an in-memory Router candidate. Test user-visible behavior rather than implementation details.
@@ -136,6 +142,8 @@ Do not set an arbitrary global percentage before a baseline exists.
 
 Exact numeric thresholds and diff-coverage capability require later approval.
 
+The WP5-A coverage command currently reports `0/0` with unknown percentages because no production Domain module exists. This is an explicit empty pre-baseline state, not a zero-percent baseline and not a ratchet. Coverage is configured to include `src/domain/**/*.ts`; once an approved production Domain module exists, untested matching modules enter the report rather than being hidden.
+
 ## CI Gate Layers
 
 Provider-neutral required stages are:
@@ -166,8 +174,12 @@ Canonical local interfaces:
 - `npm run verify:lint` (`npm.cmd run verify:lint` from Windows PowerShell) runs the fixed zero-warning lint scope.
 - `npm run verify:lint-gates` (`npm.cmd run verify:lint-gates` from Windows PowerShell) runs the architecture-import rule self-test.
 - `npm run verify:format` (`npm.cmd run verify:format` from Windows PowerShell) runs the non-writing Prettier check.
+- `npm run verify:test-typecheck` (`npm.cmd run verify:test-typecheck` from Windows PowerShell) typechecks the test project without emitting files.
+- `npm run verify:unit-self-test` (`npm.cmd run verify:unit-self-test` from Windows PowerShell) checks Vitest pass, failure, focused-only, and no-test exit behavior in OS-temporary fixtures.
+- `npm run verify:unit` (`npm.cmd run verify:unit` from Windows PowerShell) runs the fixed Node unit-test suite with cache/output directed to a validated OS-temporary directory.
+- `npm run verify:coverage` (`npm.cmd run verify:coverage` from Windows PowerShell) runs V8 coverage with reports directed to the validated OS-temporary directory.
 
-The wrapper accepts only registered task names and no additional arguments. The registered tasks are build, format, lint, lint-gates, self-test, and typecheck. A future test, coverage, generated-type, or browser task must be added to the internal allowlist by its separately approved work package. It must define fixed arguments, redirect supported outputs to OS temporary storage, and add any unavoidable workspace fallback output to the protected manifest.
+The wrapper accepts only registered task names and no additional arguments. The registered tasks are build, coverage, format, lint, lint-gates, self-test, test-typecheck, typecheck, unit, and unit-self-test. A future component, generated-type, database, or browser task must be added to the internal allowlist by its separately approved work package. It must define fixed arguments, redirect supported outputs to OS temporary storage, and add any unavoidable workspace fallback output to the protected manifest.
 
 All verification outputs must use a validated unique OS/runner temporary root where supported, including:
 
@@ -199,7 +211,7 @@ Git status alone is insufficient because ignored generated files may have change
 1. Artifact-safe command shell and canonical check interfaces.
 2. Strict TypeScript foundation and legacy exclusion register.
 3. ESLint and Prettier.
-4. Vitest and critical Domain tests.
+4. Vitest runner foundation, followed by separately approved critical Domain tests and the first meaningful coverage baseline.
 5. Testing Library and Router integration.
 6. Ephemeral Supabase migration/security harness.
 7. Generated database type drift gate.
