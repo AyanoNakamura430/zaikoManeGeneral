@@ -7,7 +7,13 @@ import { spawn } from "node:child_process";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const protectedDirectories = ["dist", ".vite", "node_modules/.vite", "coverage", "test-results", "playwright-report"];
-const allowedTasks = new Set(["build", "self-test", "typecheck"]);
+const allowedTasks = new Set(["build", "format", "lint", "lint-gates", "self-test", "typecheck"]);
+const npmTasks = new Map([
+  ["format", "format:check"],
+  ["lint", "lint"],
+  ["lint-gates", "lint:gates"],
+  ["typecheck", "typecheck"],
+]);
 
 function runProcess(command, args, cwd, capture = false) {
   return new Promise((resolveProcess, reject) => {
@@ -315,7 +321,7 @@ async function runSelfTest() {
 async function main() {
   const [task, ...extra] = process.argv.slice(2);
   if (!allowedTasks.has(task) || extra.length > 0) {
-    console.error("Usage: node scripts/verify.mjs <build|self-test|typecheck>");
+    console.error("Usage: node scripts/verify.mjs <build|format|lint|lint-gates|self-test|typecheck>");
     return 3;
   }
   if (task === "self-test") return runSelfTest();
@@ -334,11 +340,11 @@ async function main() {
       displayCommand: "npm run build -- --outDir <OS temp>/build --emptyOutDir",
     })
     : await verifyCommand({
-      label: "typecheck",
+      label: task,
       workspace: repositoryRoot,
       command: process.execPath,
-      args: [npmCli, "run", "typecheck"],
-      displayCommand: "npm run typecheck",
+      args: [npmCli, "run", npmTasks.get(task)],
+      displayCommand: `npm run ${npmTasks.get(task)}`,
     });
   return result.exitCode;
 }

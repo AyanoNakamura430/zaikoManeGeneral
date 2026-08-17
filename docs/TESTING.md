@@ -2,12 +2,12 @@
 
 ## Status and Evidence Boundary
 
-The Phase 2 quality architecture is approved. The artifact-safe verification shell and initial strict TypeScript foundation are implemented; later quality stages remain unimplemented.
+The Phase 2 quality architecture is approved. The artifact-safe verification shell, initial strict TypeScript foundation, and ESLint/Prettier architecture gates are implemented; later quality stages remain unimplemented.
 
 Current repository facts:
 
 - the canonical artifact-safe strict typecheck is `npm run verify:typecheck` (use `npm.cmd` from Windows PowerShell); it completed without emitting files or changing protected workspace artifacts on 2026-08-17;
-- no lint or formatter configuration;
+- the canonical artifact-safe lint, architecture-gate, and format checks completed with zero warnings and without changing protected workspace artifacts on 2026-08-17;
 - no unit, component, integration, database-security, or E2E test configuration;
 - the canonical artifact-safe build check is `npm run verify:build` (use `npm.cmd` from Windows PowerShell); it successfully built to an OS temporary directory without changing protected workspace artifacts on 2026-08-17;
 - no CI configuration is established.
@@ -63,7 +63,19 @@ Approved tool families:
 
 New architecture code targets zero warnings. Any temporary legacy exception is file-scoped, justified, and assigned a removal task. In particular, lint should prevent direct Supabase imports from feature screens and enforce approved dependency direction where practical.
 
-Exact versions, plugins, rules, and configuration require compatibility and dependency review.
+The initial exact tool baseline is ESLint `9.39.5`, `@eslint/js` `9.39.5`, `typescript-eslint` `8.67.0`, `eslint-plugin-react-hooks` `7.1.1`, `eslint-plugin-jsx-a11y` `6.10.2`, and Prettier `3.9.6`. ESLint uses the type-aware recommended TypeScript rules through the TypeScript project service, plus recommended JavaScript, React Hooks, and accessibility rules with `--max-warnings 0`. Strict compiler semantics remain independently enforced by `verify:typecheck`.
+
+Lint and format commands target every `src/**/*.ts` and `src/**/*.tsx` path so future architecture modules enter the gates automatically. ESLint's global ignores and `.prettierignore` preserve the WP3 legacy exclusions as the source of truth; those exclusions must shrink under their recorded exit conditions. `format:check` is non-writing and is the verification gate; `format:write` is an explicit developer command over the same non-ignored source scope.
+
+Architecture import gates apply automatically when files are added under `src/domain`, `src/application`, `src/features`, `src/adapters`, and `src/infrastructure`:
+
+- Domain rejects React, routing, Supabase, and outer-layer imports.
+- Application rejects UI, provider implementation, adapter, and infrastructure imports.
+- Features reject direct Supabase, adapter, infrastructure, and aliased feature-internal imports.
+- Adapters and infrastructure reject dependencies back into UI or Application workflows.
+- Direct `@supabase/supabase-js` imports are allowed only in adapters, infrastructure, and composition roots.
+
+`src/lib/supabase.ts` is a temporary direct-Supabase exception for the frozen legacy application. Remove the exception when the new composition root replaces the legacy client entry; new Product code must not import it. `src/vite-env.d.ts` declares only the required public Vite environment key names and their string types; it contains no values. `npm run verify:lint-gates` checks five negative and three positive virtual source cases through ESLint's `lintText` API using an isolated architecture-only config, without creating workspace fixtures or weakening type-aware lint for real source.
 
 ## Test Layers
 
@@ -151,8 +163,11 @@ Canonical local interfaces:
 - `npm run verify:build` (`npm.cmd run verify:build` from Windows PowerShell) runs the existing Vite build with its output redirected to a validated unique OS temporary directory.
 - `npm run verify:self-test` (`npm.cmd run verify:self-test` from Windows PowerShell) exercises the verification boundary in disposable OS-temporary Git fixtures.
 - `npm run verify:typecheck` (`npm.cmd run verify:typecheck` from Windows PowerShell) runs the fixed `tsc --project tsconfig.json --noEmit` command through the same before/after artifact boundary.
+- `npm run verify:lint` (`npm.cmd run verify:lint` from Windows PowerShell) runs the fixed zero-warning lint scope.
+- `npm run verify:lint-gates` (`npm.cmd run verify:lint-gates` from Windows PowerShell) runs the architecture-import rule self-test.
+- `npm run verify:format` (`npm.cmd run verify:format` from Windows PowerShell) runs the non-writing Prettier check.
 
-The wrapper accepts only registered task names and no additional arguments. The registered tasks are build, self-test, and typecheck. A future lint, test, coverage, generated-type, or browser task must be added to the internal allowlist by its separately approved work package. It must define fixed arguments, redirect supported outputs to OS temporary storage, and add any unavoidable workspace fallback output to the protected manifest.
+The wrapper accepts only registered task names and no additional arguments. The registered tasks are build, format, lint, lint-gates, self-test, and typecheck. A future test, coverage, generated-type, or browser task must be added to the internal allowlist by its separately approved work package. It must define fixed arguments, redirect supported outputs to OS temporary storage, and add any unavoidable workspace fallback output to the protected manifest.
 
 All verification outputs must use a validated unique OS/runner temporary root where supported, including:
 

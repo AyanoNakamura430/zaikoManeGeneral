@@ -1,0 +1,11 @@
+dist/
+.vite/
+node_modules/
+coverage/
+test-results/
+playwright-report/
+src/main.tsx
+src/app/App.tsx
+src/app/components/ui/
+src/app/components/figma/
+src/imports/
