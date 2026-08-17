@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 1 Product Definition was approved on 2026-08-17. This document defines user-visible product behavior. Database, RLS, Storage, routing, component, and migration implementation belong to Phase 2.
+Phase 1 Product Definition was approved on 2026-08-17. Phase 2 Architecture and Data Design was approved on the same date. This document defines user-visible Product behavior; implementation details are owned by the linked architecture documents and still require bounded implementation plans.
 
 ## Product Vision
 
@@ -54,7 +54,7 @@ An Item is one inventory record representing a physical product, possession, or 
 - System categories cannot be renamed or deleted in v1.
 - Users can create a category from an Item form or the Category management screen.
 - User categories can be renamed, reordered, and deleted from Category management.
-- A Category name is required, and duplicate Category names are not allowed for the same user. Name-comparison and normalization rules belong to Phase 2.
+- A Category name is required, and duplicate Category names are not allowed for the same user. Approved name-comparison and normalization direction is documented in [`DATABASE.md`](DATABASE.md).
 - Deleting a user category never deletes its Items. A confirmation shows the affected count, then those Items become Uncategorized.
 - A Category may have an optional color from a preset palette. Names remain visible so color is never the only signal.
 - Category icons and hierarchy are not part of v1.
@@ -77,7 +77,7 @@ v1 uses protected, system-defined optional templates. User-created Categories us
 | 工具・用品 | 規格・サイズ | text |
 | 工具・用品 | 材質 | text |
 
-When an Item changes Category, values belonging to the previous Category are retained but hidden. Hidden values are not searched or filtered and are restored if the Item returns to that Category. Their storage representation belongs to Phase 2.
+When an Item changes Category, values belonging to the previous Category are retained but hidden. Hidden values are not searched or filtered and are restored if the Item returns to that Category. The approved storage representation is documented in [`DATABASE.md`](DATABASE.md).
 
 ## Inventory, Quantity, Unit, and Status
 
@@ -182,7 +182,7 @@ Copy opens a prefilled Create form and creates an independent Item. It copies It
 - Logout clears the previous account's inventory, images, Search, and UI state from view. Unsaved-change confirmation runs first when needed.
 - Session expiry is shown as a re-authentication requirement, not as empty inventory or a generic network error. Current-tab form input is retained where feasible without persistent storage.
 
-Self-service Delete Account is a production-release gate. It requires re-authentication and explicit confirmation that deletion is immediate, irreversible, and covers the account and all user-owned Items, Categories, attribute values, and images. Safe execution and failure recovery belong to Phase 2.
+Self-service Delete Account is a production-release gate. It requires re-authentication and explicit confirmation. There is no grace period or undo, and access terminates immediately. Physical deletion of all user-owned Items, materialized Categories, attribute values, images, application records, and the Auth user proceeds through a durable retryable workflow. Global system Category Templates and Attribute Definitions are shared reference data and are not deleted.
 
 Private ownership is a product promise. The application is not production-ready until cross-account isolation and image access are verified; current RLS and Storage policies remain unverified.
 
@@ -254,6 +254,6 @@ See [`DESIGN.md`](DESIGN.md) and [`FRONTEND.md`](FRONTEND.md) for the approved w
 - Fake product photographs as placeholders.
 - Direct production adoption of unapproved generated Figma code.
 
-## Phase 2 Handoff
+## Architecture Handoff
 
-Phase 2 must design the general Item/Category/attribute representation, Category ordering, schema and migration, RLS and Storage policies, image lifecycle, authentication and deletion flows, Search/Filter/Sort implementation, direct navigation, frontend boundaries, and treatment of existing yarn/local data. It must not reinterpret the approved Product behavior without new human approval.
+Phase 2 approved the general Item/Category/Attribute representation, Category ordering, logical schema and migration direction, GRANT/RLS and Storage direction, image lifecycle, authentication and deletion architecture, Search/Filter/Sort implementation direction, direct navigation, frontend boundaries, quality gates, and treatment of existing yarn/local data. See [`ARCHITECTURE.md`](ARCHITECTURE.md), [`DATABASE.md`](DATABASE.md), [`FRONTEND.md`](FRONTEND.md), and [`TESTING.md`](TESTING.md). Implementation must not reinterpret the approved Product behavior without new human approval.

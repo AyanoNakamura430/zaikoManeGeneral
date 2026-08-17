@@ -28,26 +28,33 @@ This tracks phase status; requirements and design belong in their owning documen
 
 ## Phase 2 — Architecture and Data Design
 
-- [ ] General-purpose item model
-- [ ] Category model
-- [ ] Category ordering
-- [ ] Category-attribute representation and hidden-value lifecycle
-- [ ] Supabase schema
-- [ ] RLS
-- [ ] Storage policies
-- [ ] Authentication, account deletion, and cross-account verification design
-- [ ] Migration and rollback
-- [ ] Existing yarn data and LocalStorage handling
-- [ ] Frontend responsibility boundaries
-- [ ] Direct navigation and state boundaries
-- [ ] Search, Filter, and Sort implementation design
+- [x] General-purpose Item model
+- [x] Category model and ordering
+- [x] Hybrid Category-Attribute representation and hidden-value lifecycle
+- [x] Logical Supabase schema, constraints, and index direction
+- [x] GRANT, RLS, and cross-account verification design
+- [x] Private Storage and image lifecycle design
+- [x] Authentication, trusted onboarding, and account-deletion design
+- [x] Additive migration, rollback, legacy yarn data, and LocalStorage direction
+- [x] Frontend responsibility, route, state, validation, and error boundaries
+- [x] Search, Filter, and Sort implementation direction
+- [x] Strict quality, test-layer, CI-gate, and artifact-safety direction
+- [x] Phase 2 integration review and human approval
 
 ## Phase 3 — Quality Foundation
 
-- [ ] TypeScript configuration
-- [ ] Lint
-- [ ] Test foundation
-- [ ] Production build verification
+- [ ] WP1: Runtime and tool compatibility discovery with an approved implementation plan
+- [ ] WP2: Artifact-safe verification shell and temporary-output build check
+- [ ] WP3: Strict TypeScript foundation and legacy exclusion register
+- [ ] WP4: ESLint, Prettier, and architecture import gates
+- [ ] WP5: Vitest Domain unit-test foundation and coverage baseline
+- [ ] WP6: Component and Router integration-test foundation
+- [ ] WP7: Ephemeral Supabase migration, constraint, RLS, GRANT, and Storage harness
+- [ ] WP8: Generated database type drift gate after initial migrations exist
+- [ ] WP9: Playwright critical E2E foundation
+- [ ] WP10: CI integration after canonical local checks are stable
+
+Each work package requires its own bounded implementation plan and approval. Exact dependencies, versions, configs, SQL, policies, providers, and external settings are not approved by Phase 2 completion.
 
 ## Phase 4 — Implementation
 

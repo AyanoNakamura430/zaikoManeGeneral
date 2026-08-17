@@ -1,33 +1,215 @@
 # Database and Supabase
 
-## Evidence boundary
+## Status and Evidence Boundary
 
-This records repository-observed fields and operations, not a verified live schema. No migration, generated database types, RLS policies, or Storage policies are tracked.
+This document records the approved Phase 2 logical design. It does not claim that the target schema or policies exist.
 
-## Observable table and fields
+The live schema, data volume and quality, Postgres/Supabase versions, RLS, GRANT, Storage policies, bucket visibility, Auth settings, and existing migration history remain unverified. Exact SQL, names, functions, policies, privileges, migrations, and destructive actions require a separately approved implementation plan and rollback procedure.
 
-Frontend code accesses `zaikomane_items`: `id`, `user_id`, `photo`, `image`, `maker`, `product_name`, `color_name`, `color_code`, `material`, `gauge`, `quantity`, `purchase_date`, `url`, `notes`, `weight_g`, `length_m`, `needle_min`, `needle_max`, `hook_min`, `hook_max`, `gauge_stitches`, `gauge_rows`, `created_at`, and `updated_at`.
+The repository-observed legacy table and Storage behavior remain documented in [`CURRENT_STATE.md`](CURRENT_STATE.md).
 
-Nullability, defaults, constraints, indexes, foreign keys, and actual types are unverified.
+## Logical Schema
 
-## Observable CRUD
+### Application Accounts
 
-- Select visible rows ordered by `created_at` descending.
-- Insert with authenticated `user_id` and return the row.
-- Update by `id` with client-generated `updated_at`.
-- Delete by `id`.
+An application-owned account record represents onboarding and authorization state for each Auth user. Candidate states include pending, active, and deleting.
 
-Select, update, and delete lack a frontend `user_id` filter. Effective isolation may depend on RLS; security must not be assumed while policies are unverified.
+- The Auth user ID is the stable identity and idempotency key.
+- Inventory access requires the caller's application account to be active.
+- Pending state supports onboarding failure and Retry without displaying a false empty Inventory.
+- Deleting state immediately blocks Inventory and image access while durable cleanup runs.
+- Exact table name, columns, status representation, and trusted write mechanism remain implementation details.
 
-## Storage
+### Category Templates
 
-- Bucket `product-images`; upload path `{user_id}/{timestamp}-{original filename}`.
-- Signed URL lifetime 600 seconds.
-- JPEG, PNG, WebP; frontend maximum 5 MB.
-- After item deletion, frontend checks for another `photo` reference before requesting object deletion.
+Global read-only reference data defines the six approved default Categories. Each Template has an immutable stable key, display name, default order, optional preset color key, and lifecycle metadata.
 
-Storage policy, ownership enforcement, visibility, and server-side validation are unverified.
+Approved stable-key candidates are:
 
-## Known concerns
+- `daily_goods`
+- `food_beverage`
+- `clothing_accessories`
+- `electronics_appliances`
+- `hobby_collection`
+- `tools_supplies`
 
-`photo` and `image` overlap; their compatibility intent is undocumented. The general-purpose item/category schema and migration/rollback process are undecided. Schema, migration, RLS, Storage policy, and destructive data changes require approval and rollback planning.
+Display labels remain the Japanese Product labels in [`PRODUCT.md`](PRODUCT.md). Labels are not persistence keys.
+
+### Attribute Definitions
+
+Global read-only Definitions identify each fixed system Attribute with an immutable key, Category Template key, value type, display name, order, searchability, and lifecycle metadata. v1 values are text or boolean. Definitions are shared reference data; Item Attribute Values are private user data.
+
+Definitions are not physically deleted while retained Item values may reference their stable identity. Exact seed SQL is an implementation detail.
+
+### Categories
+
+Every user has materialized Category rows, including six system-derived Categories and any custom Categories.
+
+Candidate fields and constraints:
+
+- UUID-family stable ID and non-null owner ID;
+- nullable Template key, where non-null means system-derived;
+- display name and normalized `name_key`;
+- optional preset color key;
+- non-negative sort order;
+- timestamps;
+- unique `(id, user_id)` for owner-preserving Item references;
+- one row per `(user_id, template_key)` for system-derived Categories;
+- unique `(user_id, name_key)` across system and custom Categories.
+
+`name_key` uses the approved normalization intent: Unicode NFKC, trim, internal whitespace collapse, and case fold. The exact implementation and test vectors require approval.
+
+System-derived Categories have fixed name, deletion, and order behavior; the user may change their approved preset color. Custom Categories permit name, color, order, and deletion. Frontend clients cannot create arbitrary system-derived rows or change Template linkage.
+
+Trusted onboarding creates the six system-derived Categories idempotently after verification. The exact trusted runtime is not yet selected.
+
+### Items
+
+Candidate typed fields are:
+
+- UUID-family stable ID;
+- non-null owner ID;
+- nullable Category ID, where null means Uncategorized;
+- required non-blank Item name; duplicate Item names are allowed;
+- exact non-negative Quantity, default 1;
+- required stable Unit key, default representing `点`;
+- optional non-negative low-stock threshold;
+- optional image path;
+- optional Notes, Purchase date, Brand/Maker, Color, and Model/Product code;
+- versioned JSONB Category Attribute Values;
+- created and updated timestamps.
+
+Use an exact numeric type for Quantity and threshold. Count Units require integral values; measurement Units permit decimals. Unit labels are not stored as persistence keys. Exact UUID generator, numeric bounds/precision, Unit key spellings, and date/timestamp implementation require live compatibility review.
+
+Item-to-Category integrity includes owner identity, preventing an Item owned by one user from referencing another user's Category. Use restrictive deletion behavior: the Category deletion use case first moves affected Items to Uncategorized and only then deletes the custom Category. Direct incomplete deletion fails rather than deleting Items.
+
+Stock status is derived from Quantity and threshold and is not a separately authoritative column.
+
+## Hybrid Attribute Contract
+
+Category-specific values use a versioned Item-owned JSONB document. The conceptual shape is:
+
+```json
+{
+  "version": 1,
+  "categories": {
+    "daily_goods": {
+      "spec_size": "large",
+      "opened": true
+    }
+  }
+}
+```
+
+Rules:
+
+- Category namespace uses the immutable Category Template key.
+- Leaf key uses the immutable Attribute key, not its label.
+- Known values match the Definition type; v1 text is a JSON string and boolean is a JSON boolean.
+- Empty text removes the known key rather than storing null.
+- Category changes do not rewrite or delete the document.
+- Only values for the current system-derived Category are active, visible, and searchable.
+- Other Category namespaces remain hidden and are restored if the Item returns to that Category.
+- Custom Categories and Uncategorized have no active Category-specific Attributes in v1.
+- Unknown or legacy keys are preserved unchanged but ignored by UI, Search, and Filter.
+- UI code never creates new unknown keys.
+- Known type mismatch is an integrity error.
+- Raw JSON encode, decode, patch, and preservation live in the Domain/Adapter codec only.
+
+Fixed v1 known keys and types are independently validated in the Domain and database. Exact validation function/check implementation requires current platform verification.
+
+Reconsider normalized Attribute Value storage when user-defined Attributes, typed Attribute filtering/sorting, Attribute analytics, stronger dynamic database typing, or demonstrated JSON query limitations enter scope.
+
+## Index Direction
+
+Begin with the minimum indexes required by ownership, integrity, and approved queries:
+
+- Category owner/name uniqueness and owner/order listing;
+- per-owner system Template uniqueness;
+- Item owner plus created/updated ordering;
+- Item owner plus Category filtering;
+- Item owner plus Unit and Quantity for single-Unit sorting;
+- non-null Purchase date filtering/sorting;
+- indexes on ownership and foreign-key columns used by RLS and joins.
+
+Do not preemptively add a full JSONB GIN index, full-text search, a trigram search document, or a stored stock-status column. Start with owner-scoped Product-semantic Search. Add search-specific indexes only after representative data and `EXPLAIN` demonstrate a need; substring-compatible trigram design is the first re-evaluation candidate.
+
+## GRANT and RLS Direction
+
+GRANT and RLS are separate mandatory gates.
+
+- Anonymous roles receive no application-table or private-image access.
+- Active authenticated users receive only the table operations required by Product behavior.
+- Category Templates and Attribute Definitions are read-only reference data for active users.
+- Application account state is minimally readable by its owner; trusted operations own state transitions.
+- Items and Categories require active account plus owner identity.
+- Item insert/update cannot change ownership or attach a Category owned by another user.
+- System Category Template linkage, name, order, and deletion are not client-writable; only the approved color change is permitted.
+- UPDATE requires a matching SELECT policy plus explicit existing-row and resulting-row checks.
+- Frontend `user_id` filters never substitute for RLS.
+- Data API exposure and explicit table/sequence privileges must be verified separately.
+
+Do not put authorization data in user-editable metadata. Browser code never receives service-role or secret credentials. Exact policy and privilege SQL is unapproved until accompanied by an A/B negative-test matrix.
+
+## Private Image Storage
+
+Create a new private v1 bucket rather than assuming the legacy `product-images` bucket is safe. Use the path contract:
+
+`{user_id}/{item_id}/{random_object_id}.{canonical_ext}`
+
+- Do not expose the original filename in the object path.
+- Validate owner prefix and owned Item relationship; Storage `owner_id` alone is not authorization.
+- Enforce the approved JPEG/PNG/WebP and 5 MB Product limits using supported server/bucket controls as well as client prechecks.
+- Use unique-object INSERT for upload and replacement; client upsert/Storage UPDATE is not part of v1.
+- Read access requires active account and owner authorization.
+- Direct browser DELETE is avoided in favor of trusted cleanup.
+
+Image lifecycle:
+
+- Replace: upload and validate new object, switch the Item link, then clean up the old object.
+- Remove: unlink the Item first, then clean up the object.
+- Item delete: delete the Item first, then clean up its object.
+- Cleanup is idempotent, treats not-found as success, and supports retry, monitoring, and dead-letter/manual recovery.
+
+Database and Storage do not share a transaction. Partial results are represented explicitly as described in [`FRONTEND.md`](FRONTEND.md).
+
+## Trusted Onboarding and Account Deletion
+
+Trusted onboarding verifies the Auth user, creates or activates the application account, and creates the six system Categories idempotently. It is not performed through arbitrary browser inserts.
+
+Self-service account deletion is a durable, idempotent trusted workflow:
+
+1. require fresh reauthentication;
+2. set application account to deleting so access stops immediately;
+3. revoke sessions and sign out;
+4. delete private Storage objects;
+5. delete user-owned Items, Categories, Values, and application records safely;
+6. delete the Auth user last.
+
+There is no grace period or undo. Physical cleanup starts immediately and retries to completion; partial failure does not reactivate the account. Global Category Templates and Attribute Definitions are not user-owned and are not deleted. Monitoring, alerts, manual recovery, legal/privacy retention, and the exact durable runtime require separate approval.
+
+## Migration and Rollback
+
+Use additive side-by-side migration, not an in-place rewrite of `zaikomane_items`.
+
+1. Perform approved read-only discovery of live schema, IDs, types, constraints, indexes, RLS/GRANT, row counts, nulls, invalid values, image references, owners, and migration history.
+2. Create the new structures and policies without changing the legacy table.
+3. Seed Templates/Definitions and materialized system Categories idempotently.
+4. Backfill deterministically with a legacy-to-new identity map and per-row failure reporting.
+5. Verify counts, ownership, required fields, JSON types, image mapping, query behavior, and A/B isolation.
+6. Use a controlled maintenance/write-freeze window and final delta backfill rather than initial dual-write.
+7. Cut over the application only after smoke and security verification.
+8. Retain the legacy table read-only for an approved rollback window.
+9. Perform destructive legacy cleanup only through a later explicit approval.
+
+Candidate legacy mappings such as `product_name` to Item name, `maker` to Brand, and `color_name` to Color must be verified against actual data. Existing `個` semantics must not be silently converted to `点`. Resolve missing Item names manually by default; any placeholder strategy needs approval after counts are known.
+
+Do not infer mappings for yarn-specific fields or automatically classify legacy records. Preserve those fields in the read-only legacy archive during migration/rollback. Determine `photo` versus `image` precedence and legacy URL retention only after discovery.
+
+Do not automatically upload LocalStorage data. Its owner, freshness, and consistency cannot be assumed. Notification, export, or opt-in import requires separate evidence and approval.
+
+## Required Verification
+
+Production readiness requires black-box tests using anonymous, unverified, active User A, active User B, deleting-account, expired, and revoked contexts. Test each granted operation, cross-owner IDs and paths, Category attachment, system protection, image access, deletion failure recovery, and other-user/global-reference preservation.
+
+Fixtures may be created through a trusted context, but authorization assertions must not run through service-role or bypass-RLS credentials. The full quality matrix belongs to [`TESTING.md`](TESTING.md).

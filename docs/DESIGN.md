@@ -52,3 +52,5 @@ Exact test tooling and automated gates belong to Phase 3.
 - Primary UI system: MUI, Radix/shadcn-style, current custom UI, or an approved alternative.
 - Reuse or retirement of individual current UI and Figma-generated assets.
 - Figma file ownership, versioning, and design/code drift workflow.
+
+These decisions are prerequisites for new screen implementation. Phase 2 architecture deliberately does not select a primary UI library. Until approval, do not use the presence of MUI, Radix/shadcn-style, custom UI, or generated Figma assets as permission to mix or adopt them in new features.
