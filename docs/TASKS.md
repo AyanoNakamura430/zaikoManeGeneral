@@ -45,7 +45,7 @@ This tracks phase status; requirements and design belong in their owning documen
 
 - [x] WP1: Runtime and tool compatibility discovery with an approved implementation plan
 - [x] WP2: Artifact-safe verification shell and temporary-output build check
-- [ ] WP3: Strict TypeScript foundation and legacy exclusion register
+- [x] WP3: Strict TypeScript foundation and legacy exclusion register
 - [ ] WP4: ESLint, Prettier, and architecture import gates
 - [ ] WP5: Vitest Domain unit-test foundation and coverage baseline
 - [ ] WP6: Component and Router integration-test foundation

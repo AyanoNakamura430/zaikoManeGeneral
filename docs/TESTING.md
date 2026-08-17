@@ -2,11 +2,11 @@
 
 ## Status and Evidence Boundary
 
-The Phase 2 quality architecture is approved but not implemented.
+The Phase 2 quality architecture is approved. The artifact-safe verification shell and initial strict TypeScript foundation are implemented; later quality stages remain unimplemented.
 
 Current repository facts:
 
-- no project TypeScript configuration or independent typecheck script;
+- the canonical artifact-safe strict typecheck is `npm run verify:typecheck` (use `npm.cmd` from Windows PowerShell); it completed without emitting files or changing protected workspace artifacts on 2026-08-17;
 - no lint or formatter configuration;
 - no unit, component, integration, database-security, or E2E test configuration;
 - the canonical artifact-safe build check is `npm run verify:build` (use `npm.cmd` from Windows PowerShell); it successfully built to an OS temporary directory without changing protected workspace artifacts on 2026-08-17;
@@ -25,7 +25,23 @@ Strict TypeScript is the v1 target.
 - Typecheck emits no application artifacts.
 - Style and unused-code policy belong to lint rather than being hidden inside typecheck.
 
-Exact `tsconfig` files, compiler options, dependency compatibility, and legacy exception deadlines require a Phase 3 implementation plan.
+The initial foundation uses exact dev dependencies `typescript@6.0.3`, `@types/react@18.3.31`, and `@types/react-dom@18.3.7`. `tsconfig.json` enables `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noFallthroughCasesInSwitch`, `noUncheckedSideEffectImports`, `isolatedModules`, and `verbatimModuleSyntax`, with `noEmit` and no incremental build information.
+
+The initial strict scope is `src/lib/supabase.ts`, `src/vite-env.d.ts`, and every future `src/**/*.ts` or `src/**/*.tsx` file outside the explicit exclusions below. New Product or architecture code must not be added under an excluded path. An existing excluded asset must enter the strict scope before it is connected to the production entry graph.
+
+### Legacy Exclusion Register
+
+| Path | Reason | Exit condition |
+| --- | --- | --- |
+| `src/main.tsx` | It imports the frozen legacy App. | Move it into strict scope when the new App shell replaces the legacy entry. |
+| `src/app/App.tsx` | It is the oversized legacy monolith. | Move it into strict scope when the approved vertical-slice cutover is complete. |
+| `src/imports/**` | It contains Figma-generated reference assets. | Audit each reused asset into strict scope, or remove the reference assets with approval. |
+| `src/app/components/ui/**` | It contains currently unadopted UI assets. | Select the primary design system and audit each reused asset into strict scope. |
+| `src/app/components/figma/**` | It contains a reference helper. | Audit it into strict scope if it is adopted by production code. |
+| `vite.config.ts` | It is Node tooling configuration outside the browser-source TypeScript project. | Add it to a separately approved strict Node-tooling project. |
+| `scripts/verify.mjs` | It is the existing JavaScript verification tool. | Migrate tooling to TypeScript only through a separately approved work package. |
+
+The last two paths are outside the `src/**/*.ts` and `src/**/*.tsx` include patterns rather than entries in `tsconfig.json`'s `exclude` array.
 
 ## Database and Domain Types
 
@@ -134,8 +150,9 @@ Canonical local interfaces:
 
 - `npm run verify:build` (`npm.cmd run verify:build` from Windows PowerShell) runs the existing Vite build with its output redirected to a validated unique OS temporary directory.
 - `npm run verify:self-test` (`npm.cmd run verify:self-test` from Windows PowerShell) exercises the verification boundary in disposable OS-temporary Git fixtures.
+- `npm run verify:typecheck` (`npm.cmd run verify:typecheck` from Windows PowerShell) runs the fixed `tsc --project tsconfig.json --noEmit` command through the same before/after artifact boundary.
 
-The wrapper accepts only registered task names and no additional arguments. A future typecheck, lint, test, coverage, generated-type, or browser task must be added to the internal allowlist by its separately approved work package. It must define fixed arguments, redirect supported outputs to OS temporary storage, and add any unavoidable workspace fallback output to the protected manifest.
+The wrapper accepts only registered task names and no additional arguments. The registered tasks are build, self-test, and typecheck. A future lint, test, coverage, generated-type, or browser task must be added to the internal allowlist by its separately approved work package. It must define fixed arguments, redirect supported outputs to OS temporary storage, and add any unavoidable workspace fallback output to the protected manifest.
 
 All verification outputs must use a validated unique OS/runner temporary root where supported, including:
 

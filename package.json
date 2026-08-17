@@ -11,8 +11,10 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
     "verify:build": "node scripts/verify.mjs build",
-    "verify:self-test": "node scripts/verify.mjs self-test"
+    "verify:self-test": "node scripts/verify.mjs self-test",
+    "verify:typecheck": "node scripts/verify.mjs typecheck"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -74,8 +76,11 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
     "@vitejs/plugin-react": "4.7.0",
     "tailwindcss": "4.1.12",
+    "typescript": "6.0.3",
     "vite": "6.3.5"
   },
   "peerDependencies": {
