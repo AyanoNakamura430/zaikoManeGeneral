@@ -60,7 +60,8 @@ Each work package requires its own bounded implementation plan and approval. Exa
 
 ## Phase 4 — Implementation
 
-Not started. Create approved bounded tasks after required earlier decisions.
+- [x] WP1: Pure Inventory Domain Core for fixed Units, Quantity, threshold, and derived stock status
+- [ ] WP2: Define the next bounded implementation slice after prerequisite review
 
 ## Phase 5 — Test and Review
 

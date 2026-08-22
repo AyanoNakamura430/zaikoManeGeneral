@@ -9,7 +9,7 @@ Current repository facts:
 - the canonical artifact-safe strict typecheck is `npm run verify:typecheck` (use `npm.cmd` from Windows PowerShell); it completed without emitting files or changing protected workspace artifacts on 2026-08-17;
 - the canonical artifact-safe lint, architecture-gate, and format checks completed with zero warnings and without changing protected workspace artifacts on 2026-08-17;
 - the canonical artifact-safe Vitest runner, runner self-test, test typecheck, and coverage command completed without changing protected workspace artifacts on 2026-08-17;
-- the current Vitest suite contains the runner-foundation smoke test and critical tests for the first production Domain slice, Category comparison-name normalization;
+- the current Vitest suite contains the runner-foundation smoke test and critical tests for Category comparison-name normalization and the Phase 4 fixed-Unit, Quantity, threshold, and derived-stock-status Domain core;
 - the canonical artifact-safe Component/Router integration suite completed 2 files and 3 tests without changing protected workspace artifacts on 2026-08-22;
 - the canonical local database harness applied its test-only migration twice and completed 12 constraint, GRANT/RLS, account-state, cross-account, and private Storage assertions without changing protected workspace artifacts on 2026-08-22;
 - the canonical test-only generated-type check and intentional-drift self-test completed against the local WP7 migration without changing protected workspace artifacts on 2026-08-22;
@@ -102,7 +102,7 @@ Vitest is the approved candidate. Critical scenarios include:
 
 WP5-A uses exact dev dependencies `vitest@4.1.10` and `@vitest/coverage-v8@4.1.10`, the Node test environment, explicit imports rather than globals, and a separate strict test TypeScript project at `tests/tsconfig.json`. The runner rejects focused `.only` tests and an empty test selection. Its self-test verifies successful, failing, focused-only, and no-test processes in OS-temporary fixtures.
 
-The first production Domain slice is `normalizeCategoryNameKey`. Its named tests cover ASCII case equivalence, NFKC full-width normalization, leading/trailing Unicode whitespace, internal whitespace collapse, Japanese names and punctuation, blank input, idempotence, and preservation of meaningful differences. The separate `tests/unit/vitest-foundation.test.ts` smoke test remains excluded from production coverage and is not counted as Domain behavior coverage.
+The first production Domain slices are `normalizeCategoryNameKey` and the fixed-Unit inventory core. Named tests cover Category comparison normalization; the exact 18-Unit catalog and runtime immutability; Unit-key-bound opaque Quantity and threshold validation; finite, non-negative, count-integer, decimal-measurement, and negative-zero behavior; and `out`, `low`, and `available` status derivation. The separate `tests/unit/vitest-foundation.test.ts` smoke test remains excluded from production coverage and is not counted as Domain behavior coverage.
 
 ### Component and Router Integration
 
