@@ -1,0 +1,94 @@
+name: Quality gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 22.23.2
+  NPM_VERSION: 11.6.2
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm install --global npm@${NPM_VERSION}
+      - run: npm ci
+      - run: |
+          npm run verify:self-test
+          npm run verify:typecheck
+          npm run verify:test-typecheck
+          npm run verify:lint-gates
+          npm run verify:lint
+          npm run verify:format
+          npm run verify:unit-self-test
+          npm run verify:unit
+          npm run verify:coverage
+          npm run verify:integration
+          npm run verify:database-types-self-test
+          npm run verify:build
+
+  database-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm install --global npm@${NPM_VERSION}
+      - run: npm ci
+      - run: |
+          npm run verify:database
+          npm run verify:database-types
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm install --global npm@${NPM_VERSION}
+      - run: npm ci
+      - run: npx playwright install --only-shell chromium
+      - run: npm run verify:e2e-self-test
+      - name: Run critical browser E2E
+        id: e2e-run
+        env:
+          ZAIKO_CI_ARTIFACT_DIR: ${{ runner.temp }}/zaiko-e2e-export-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          mkdir -p "$ZAIKO_CI_ARTIFACT_DIR"
+          npm run verify:e2e
+      - name: Upload Playwright failure artifacts
+        if: failure() && steps.e2e-run.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: playwright-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/zaiko-e2e-export-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: ignore
+          retention-days: 3

@@ -2,7 +2,7 @@
 
 ## Status and Evidence Boundary
 
-The Phase 2 quality architecture is approved. The artifact-safe verification shell, initial strict TypeScript foundation, ESLint/Prettier architecture gates, WP5 Vitest/Domain foundation, WP6 Component/Router integration-test foundation, WP7 ephemeral Supabase security-harness foundation, and WP8 test-only generated-type drift gate are implemented. Later quality stages remain unimplemented.
+The Phase 2 quality architecture is approved. The artifact-safe verification shell, strict TypeScript, lint/format, unit, Component/Router integration, ephemeral Supabase security, generated-type drift, Playwright E2E, and GitHub Actions CI foundations through WP10 are implemented. The GitHub-hosted workflow has not yet been observed running; production application tests and deployment validation remain future work.
 
 Current repository facts:
 
@@ -15,7 +15,7 @@ Current repository facts:
 - the canonical test-only generated-type check and intentional-drift self-test completed against the local WP7 migration without changing protected workspace artifacts on 2026-08-22;
 - the canonical Playwright fixture E2E suite completed 3 tests with Chromium headless shell without changing protected workspace artifacts on 2026-08-22;
 - the canonical artifact-safe build check is `npm run verify:build` (use `npm.cmd` from Windows PowerShell); it successfully built to an OS temporary directory without changing protected workspace artifacts on 2026-08-17;
-- no CI configuration is established.
+- WP10 establishes `.github/workflows/quality.yml` with static, local database-security, and Chromium E2E jobs on pull requests, `main` pushes, and manual dispatch. It uses canonical verification scripts, `npm ci`, Node `22.23.2`, npm `11.6.2`, read-only permissions, cancellation of superseded runs, and bounded job timeouts. E2E failure traces/screenshots are uploaded only from runner-temporary storage with three-day retention. WP10 implementation is complete, but a GitHub Actions run has not yet been observed. CI remains a quality gate and does not authorize deployment.
 
 Do not report any check as successful until it has actually run successfully. Reports distinguish passed, failed, unavailable, deliberately omitted, and environment-dependent checks.
 

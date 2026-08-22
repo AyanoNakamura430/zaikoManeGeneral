@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { lstat, mkdtemp, mkdir, readFile, readlink, realpath, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { cp, lstat, mkdtemp, mkdir, readFile, readlink, realpath, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -208,6 +208,34 @@ async function cleanupSafeTemp(temp, workspace) {
   throw lastError;
 }
 
+async function validateArtifactDestination(configured, source, workspace) {
+  if (!configured) return null;
+  if (!isAbsolute(configured)) throw new Error("CI artifact destination must be absolute");
+  const configuredInfo = await lstat(configured);
+  if (configuredInfo.isSymbolicLink()) throw new Error("CI artifact destination cannot be a symlink");
+  const tempRoot = await realpath(tmpdir());
+  const canonicalWorkspace = await realpath(workspace);
+  const destination = await realpath(configured);
+  const info = await lstat(destination);
+  if (!info.isDirectory() || info.isSymbolicLink() || destination === tempRoot || !isWithin(tempRoot, destination) || isWithin(canonicalWorkspace, destination) || destination === source || isWithin(source, destination)) {
+    throw new Error("Refusing unsafe CI artifact destination");
+  }
+  if ((await readdir(destination)).length > 0) throw new Error("CI artifact destination must be empty");
+  return destination;
+}
+
+async function exportFailureArtifacts(source, workspace, configured) {
+  const destination = await validateArtifactDestination(configured, source, workspace);
+  if (!destination) return;
+  const child = join(destination, "playwright-failure");
+  await cp(source, child, { recursive: true, dereference: false, errorOnExist: true, force: false });
+}
+
+function artifactDestinationForTask(task, configured) {
+  if (configured && task !== "e2e") throw new Error("ZAIKO_CI_ARTIFACT_DIR is supported only for the e2e task");
+  return task === "e2e" ? configured : undefined;
+}
+
 async function validatedNpmCli() {
   const npmCli = process.env.npm_execpath;
   if (!npmCli || !isAbsolute(npmCli)) {
@@ -221,13 +249,14 @@ async function validatedNpmCli() {
   return canonical;
 }
 
-async function verifyCommand({ label, workspace, command, args, displayCommand, environment, emit = true }) {
+async function verifyCommand({ label, workspace, command, args, displayCommand, environment, ciArtifactDestination, emit = true }) {
   let before;
   let commandResult = { code: 1 };
   let changes = [];
   let temp;
   let internalError;
   let cleanupError;
+  let exportError;
   try {
     before = await snapshot(workspace);
     temp = await createSafeTemp(label, workspace);
@@ -241,12 +270,16 @@ async function verifyCommand({ label, workspace, command, args, displayCommand, 
       try { changes = snapshotChanges(before, await snapshot(workspace)); }
       catch (error) { internalError ??= error; }
     }
+    if (commandResult.code !== 0 && temp) {
+      try { await exportFailureArtifacts(temp.path, workspace, ciArtifactDestination); }
+      catch (error) { exportError = error; }
+    }
     if (temp) {
       try { await cleanupSafeTemp(temp, workspace); }
       catch (error) { cleanupError = error; }
     }
   }
-  const exitCode = internalError || cleanupError ? 3 : changes.length > 0 ? 2 : commandResult.code === 0 ? 0 : 1;
+  const exitCode = internalError || cleanupError || exportError ? 3 : changes.length > 0 ? 2 : commandResult.code === 0 ? 0 : 1;
   if (emit) {
     console.log(`task: ${label}`);
     console.log(`command: ${displayCommand}`);
@@ -255,11 +288,13 @@ async function verifyCommand({ label, workspace, command, args, displayCommand, 
     console.log(`mutations: ${changes.length}`);
     for (const change of changes) console.log(`  ${change.category} ${change.kind}: ${change.path}`);
     console.log(`cleanup: ${cleanupError ? "failed" : "passed"}`);
+    console.log(`failure artifact export: ${exportError ? "failed" : ciArtifactDestination && commandResult.code !== 0 ? "passed" : "not requested"}`);
     if (internalError) console.error(`internal error: ${internalError.message}`);
     if (cleanupError) console.error(`cleanup error: ${cleanupError.message}`);
+    if (exportError) console.error(`artifact export error: ${exportError.message}`);
     console.log(`final: ${exitCode === 0 ? "passed" : "failed"} (exit ${exitCode})`);
   }
-  return { exitCode, commandResult, changes, internalError, cleanupError };
+  return { exitCode, commandResult, changes, internalError, cleanupError, exportError };
 }
 
 async function initializeFixture(root) {
@@ -293,6 +328,81 @@ async function runSelfTest() {
   const outer = await createSafeTemp("self-test-suite", repositoryRoot);
   let failure;
   try {
+    const exportSource = join(outer.path, "export-source");
+    const exportDestination = join(outer.path, "export-destination");
+    await mkdir(exportSource);
+    await writeFile(join(exportSource, "trace.txt"), "fixture\n");
+    await mkdir(exportDestination);
+    await exportFailureArtifacts(exportSource, repositoryRoot, exportDestination);
+    if (!(await lstat(join(exportDestination, "playwright-failure", "trace.txt"))).isFile()) throw new Error("safe failure artifact export did not copy");
+    const symlinkDestination = join(outer.path, "symlink-destination");
+    await symlink(exportSource, symlinkDestination, "junction");
+    for (const [name, destination] of [
+      ["relative", "relative-artifacts"],
+      ["temp-root", await realpath(tmpdir())],
+      ["workspace", repositoryRoot],
+      ["source", exportSource],
+      ["source-child", join(exportSource, "child")],
+      ["nonempty", join(outer.path, "nonempty")],
+      ["symlink", symlinkDestination],
+    ]) {
+      if (name === "nonempty") { await mkdir(destination); await writeFile(join(destination, "existing.txt"), "existing\n"); }
+      let rejected = false;
+      try { await validateArtifactDestination(destination, exportSource, repositoryRoot); } catch { rejected = true; }
+      if (!rejected) throw new Error(`${name}: unsafe artifact destination was accepted`);
+    }
+    if (process.env.ZAIKO_CI_ARTIFACT_DIR) throw new Error("self-test must not inherit CI artifact export");
+    let commandTemp;
+    const successExport = join(outer.path, "success-export");
+    const failureExport = join(outer.path, "failure-export");
+    const rejectedExport = join(outer.path, "rejected-export");
+    await mkdir(successExport);
+    await mkdir(failureExport);
+    await mkdir(rejectedExport);
+    await writeFile(join(rejectedExport, "existing.txt"), "existing\n");
+    const exportWorkspace = join(outer.path, "export-command-workspace");
+    await initializeFixture(exportWorkspace);
+    const successExportResult = await verifyCommand({
+      label: "self-test-export-success",
+      workspace: exportWorkspace,
+      command: process.execPath,
+      args: (temp) => {
+        commandTemp = temp;
+        return ["--input-type=module", "--eval", `import { writeFile } from 'node:fs/promises'; await writeFile(${JSON.stringify(join(temp, "trace.txt"))}, 'trace\\n')`];
+      },
+      displayCommand: "node <fixed export success command>",
+      ciArtifactDestination: successExport,
+      emit: false,
+    });
+    if (successExportResult.exitCode !== 0 || (await readdir(successExport)).length !== 0) throw new Error("successful command exported failure artifacts");
+    try { await lstat(commandTemp); throw new Error("successful command temp was not cleaned"); } catch (error) { if (error.code !== "ENOENT") throw error; }
+    const failureExportResult = await verifyCommand({
+      label: "self-test-export-failure",
+      workspace: exportWorkspace,
+      command: process.execPath,
+      args: (temp) => {
+        commandTemp = temp;
+        return ["--input-type=module", "--eval", `import { writeFile } from 'node:fs/promises'; await writeFile(${JSON.stringify(join(temp, "trace.txt"))}, 'trace\\n'); process.exit(7)`];
+      },
+      displayCommand: "node <fixed export failure command>",
+      ciArtifactDestination: failureExport,
+      emit: false,
+    });
+    if (failureExportResult.exitCode !== 1 || !(await lstat(join(failureExport, "playwright-failure", "trace.txt"))).isFile()) throw new Error("failing command did not export artifacts");
+    try { await lstat(commandTemp); throw new Error("failing command temp was not cleaned"); } catch (error) { if (error.code !== "ENOENT") throw error; }
+    const rejectedExportResult = await verifyCommand({
+      label: "self-test-export-rejected",
+      workspace: exportWorkspace,
+      command: process.execPath,
+      args: ["--eval", "process.exit(7)"],
+      displayCommand: "node <fixed rejected export command>",
+      ciArtifactDestination: rejectedExport,
+      emit: false,
+    });
+    if (rejectedExportResult.exitCode !== 3 || !rejectedExportResult.exportError) throw new Error("artifact export failure did not exit 3");
+    let nonE2eRejected = false;
+    try { artifactDestinationForTask("database", failureExport); } catch { nonE2eRejected = true; }
+    if (!nonE2eRejected || artifactDestinationForTask("e2e", failureExport) !== failureExport) throw new Error("artifact task boundary failed");
     await runFixtureCase(outer.path, "success", async () => {}, "process.exit(0)", 0);
     await runFixtureCase(outer.path, "command-failure", async () => {}, "process.exit(7)", 1);
     await runFixtureCase(outer.path, "dirty-preserved", async (root) => writeFile(join(root, "tracked.txt"), "dirty\n"), "process.exit(0)", 0);
@@ -338,6 +448,9 @@ async function main() {
     return 3;
   }
   if (task === "self-test") return runSelfTest();
+  let ciArtifactDestination;
+  try { ciArtifactDestination = artifactDestinationForTask(task, process.env.ZAIKO_CI_ARTIFACT_DIR); }
+  catch (error) { console.error(error.message); return 3; }
   let npmCli;
   try { npmCli = await validatedNpmCli(); }
   catch (error) {
@@ -359,6 +472,7 @@ async function main() {
       args: [npmCli, "run", npmTasks.get(task)],
       displayCommand: `npm run ${npmTasks.get(task)}`,
       environment: testTasks.has(task) ? (temp) => ({ ...process.env, ZAIKO_TEST_OUTPUT_DIR: temp }) : undefined,
+      ciArtifactDestination,
     });
   return result.exitCode;
 }

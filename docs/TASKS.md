@@ -54,7 +54,7 @@ This tracks phase status; requirements and design belong in their owning documen
 - [x] WP7: Ephemeral Supabase migration, constraint, RLS, GRANT, and Storage harness
 - [x] WP8: Generated database type drift gate after initial migrations exist
 - [x] WP9: Playwright critical E2E foundation
-- [ ] WP10: CI integration after canonical local checks are stable
+- [x] WP10: CI integration after canonical local checks are stable
 
 Each work package requires its own bounded implementation plan and approval. Exact dependencies, versions, configs, SQL, policies, providers, and external settings are not approved by Phase 2 completion.
 
