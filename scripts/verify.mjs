@@ -7,12 +7,14 @@ import { spawn } from "node:child_process";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const protectedDirectories = ["dist", ".vite", "node_modules/.vite", "coverage", "test-results", "playwright-report"];
-const allowedTasks = new Set(["build", "coverage", "database", "database-types", "database-types-self-test", "format", "integration", "lint", "lint-gates", "self-test", "test-typecheck", "typecheck", "unit", "unit-self-test"]);
+const allowedTasks = new Set(["build", "coverage", "database", "database-types", "database-types-self-test", "e2e", "e2e-self-test", "format", "integration", "lint", "lint-gates", "self-test", "test-typecheck", "typecheck", "unit", "unit-self-test"]);
 const npmTasks = new Map([
   ["coverage", "test:coverage"],
   ["database", "test:database"],
   ["database-types", "test:database-types"],
   ["database-types-self-test", "test:database-types-self-test"],
+  ["e2e", "test:e2e"],
+  ["e2e-self-test", "test:e2e-self-test"],
   ["format", "format:check"],
   ["integration", "test:integration"],
   ["lint", "lint"],
@@ -22,7 +24,7 @@ const npmTasks = new Map([
   ["unit", "test:unit"],
   ["unit-self-test", "test:unit-self-test"],
 ]);
-const testTasks = new Set(["coverage", "database", "database-types", "database-types-self-test", "integration", "unit", "unit-self-test"]);
+const testTasks = new Set(["coverage", "database", "database-types", "database-types-self-test", "e2e", "e2e-self-test", "integration", "unit", "unit-self-test"]);
 
 function runProcess(command, args, cwd, capture = false, environment = process.env) {
   return new Promise((resolveProcess, reject) => {
@@ -332,7 +334,7 @@ async function runSelfTest() {
 async function main() {
   const [task, ...extra] = process.argv.slice(2);
   if (!allowedTasks.has(task) || extra.length > 0) {
-    console.error("Usage: node scripts/verify.mjs <build|coverage|database|database-types|database-types-self-test|format|integration|lint|lint-gates|self-test|test-typecheck|typecheck|unit|unit-self-test>");
+    console.error("Usage: node scripts/verify.mjs <build|coverage|database|database-types|database-types-self-test|e2e|e2e-self-test|format|integration|lint|lint-gates|self-test|test-typecheck|typecheck|unit|unit-self-test>");
     return 3;
   }
   if (task === "self-test") return runSelfTest();

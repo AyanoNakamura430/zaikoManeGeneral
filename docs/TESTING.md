@@ -13,7 +13,7 @@ Current repository facts:
 - the canonical artifact-safe Component/Router integration suite completed 2 files and 3 tests without changing protected workspace artifacts on 2026-08-22;
 - the canonical local database harness applied its test-only migration twice and completed 12 constraint, GRANT/RLS, account-state, cross-account, and private Storage assertions without changing protected workspace artifacts on 2026-08-22;
 - the canonical test-only generated-type check and intentional-drift self-test completed against the local WP7 migration without changing protected workspace artifacts on 2026-08-22;
-- no production-schema database-security test or E2E browser configuration exists;
+- the canonical Playwright fixture E2E suite completed 3 tests with Chromium headless shell without changing protected workspace artifacts on 2026-08-22;
 - the canonical artifact-safe build check is `npm run verify:build` (use `npm.cmd` from Windows PowerShell); it successfully built to an OS temporary directory without changing protected workspace artifacts on 2026-08-17;
 - no CI configuration is established.
 
@@ -141,6 +141,8 @@ This harness is foundation evidence, not a claim that the future production sche
 
 Playwright is the approved candidate. Begin with a primary browser for critical PR coverage and determine the release browser matrix separately.
 
+WP9 adds the pinned `@playwright/test@1.62.1` foundation. `npm run verify:e2e` starts a dependency-free Node HTTP fixture on a dedicated loopback port, runs Chromium headless with one worker and zero retries, then terminates only the runner-owned server. `npm run verify:e2e-self-test` exercises pass, failure, focused-only, and empty-suite policy cases. The fixture proves accessible role-based interaction, direct URL entry, refresh, push/replace history, Back behavior, and live-region status. Failure screenshots and traces are retained under a validated OS-temporary output directory; video is disabled and no repository `test-results` or report directory is used by the canonical wrapper. The fixture is not the Product route/Auth contract and does not exercise the legacy app, Supabase, or environment variables.
+
 Critical flows include signup, verification, onboarding, Sign in, password reset, session expiry, direct protected routes, Item CRUD, Category deletion, image lifecycle and partial failure, unsaved changes, User A/B isolation, and account deletion.
 
 Do not introduce Jest, Cypress, MSW, a runtime schema library, or pgTAP during initial foundation work without demonstrated need and approval.
@@ -196,12 +198,14 @@ Canonical local interfaces:
 - `npm run verify:unit` (`npm.cmd run verify:unit` from Windows PowerShell) runs the fixed Node unit-test suite with cache/output directed to a validated OS-temporary directory.
 - `npm run verify:coverage` (`npm.cmd run verify:coverage` from Windows PowerShell) runs V8 coverage with reports directed to the validated OS-temporary directory.
 - `npm run verify:integration` (`npm.cmd run verify:integration` from Windows PowerShell) runs the fixed jsdom Component/Router integration suite with cache/output directed to a validated OS-temporary directory.
+- `npm run verify:e2e` (`npm.cmd run verify:e2e` from Windows PowerShell) starts the owned loopback fixture server and runs the fixed Chromium critical E2E suite with failure artifacts directed to validated OS-temporary storage.
+- `npm run verify:e2e-self-test` (`npm.cmd run verify:e2e-self-test` from Windows PowerShell) verifies successful, failing, focused-only, and empty Playwright suite policies without using a Product route or repository report directory.
 - `npm run verify:database` (`npm.cmd run verify:database` from Windows PowerShell) runs the fixed local-only Supabase migration and security harness. It requires a working Docker daemon and may download/start pinned local service images; it always requests local stack cleanup in `finally`.
 - `npm run verify:database-types` (`npm.cmd run verify:database-types` from Windows PowerShell) regenerates test-only types from local migrations into validated OS-temporary storage and performs a byte-for-byte drift check.
 - `npm run verify:database-types-self-test` (`npm.cmd run verify:database-types-self-test` from Windows PowerShell) validates exact-match acceptance and intentional-drift rejection without starting Docker or writing repository files.
 - `npm run update:database-types` (`npm.cmd run update:database-types` from Windows PowerShell) is the explicit write-mode command for the test-only generated baseline; it is not a verification command and must be run only for an approved migration/type update.
 
-The wrapper accepts only registered task names and no additional arguments. The registered tasks are build, coverage, database, database-types, database-types-self-test, format, integration, lint, lint-gates, self-test, test-typecheck, typecheck, unit, and unit-self-test. A future browser task must be added to the internal allowlist by its separately approved work package. It must define fixed arguments, redirect supported outputs to OS temporary storage, and add any unavoidable workspace fallback output to the protected manifest.
+The wrapper accepts only registered task names and no additional arguments. The registered tasks are build, coverage, database, database-types, database-types-self-test, e2e, e2e-self-test, format, integration, lint, lint-gates, self-test, test-typecheck, typecheck, unit, and unit-self-test. Browser tasks use fixed arguments and redirect supported outputs to OS temporary storage; any future unavoidable workspace fallback output must be added to the protected manifest.
 
 All verification outputs must use a validated unique OS/runner temporary root where supported, including:
 
