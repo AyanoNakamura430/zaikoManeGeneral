@@ -64,6 +64,7 @@ Each work package requires its own bounded implementation plan and approval. Exa
 - [x] WP2: Pure Hybrid Attribute Definition catalog and versioned document codec
 - [x] WP3: Active Category Attribute selection from the current nullable Template key
 - [x] WP3A: Pre-persistence Attribute Definition contract correction to the approved Product table
+- [x] WP4: Pure Search query normalization, tokenization, and multi-field AND matching
 
 ## Phase 5 — Test and Review
 
