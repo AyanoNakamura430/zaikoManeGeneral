@@ -2,7 +2,7 @@
 
 ## Status and Evidence Boundary
 
-The Phase 2 quality architecture is approved. The artifact-safe verification shell, initial strict TypeScript foundation, ESLint/Prettier architecture gates, WP5 Vitest/Domain foundation, and WP6 Component/Router integration-test foundation are implemented. Later quality stages remain unimplemented.
+The Phase 2 quality architecture is approved. The artifact-safe verification shell, initial strict TypeScript foundation, ESLint/Prettier architecture gates, WP5 Vitest/Domain foundation, WP6 Component/Router integration-test foundation, and WP7 ephemeral Supabase security-harness foundation are implemented. Later quality stages remain unimplemented.
 
 Current repository facts:
 
@@ -11,7 +11,8 @@ Current repository facts:
 - the canonical artifact-safe Vitest runner, runner self-test, test typecheck, and coverage command completed without changing protected workspace artifacts on 2026-08-17;
 - the current Vitest suite contains the runner-foundation smoke test and critical tests for the first production Domain slice, Category comparison-name normalization;
 - the canonical artifact-safe Component/Router integration suite completed 2 files and 3 tests without changing protected workspace artifacts on 2026-08-22;
-- no database-security or E2E test configuration;
+- the canonical local database harness applied its test-only migration twice and completed 12 constraint, GRANT/RLS, account-state, cross-account, and private Storage assertions without changing protected workspace artifacts on 2026-08-22;
+- no production-schema database-security test or E2E browser configuration exists;
 - the canonical artifact-safe build check is `npm run verify:build` (use `npm.cmd` from Windows PowerShell); it successfully built to an OS temporary directory without changing protected workspace artifacts on 2026-08-17;
 - no CI configuration is established.
 
@@ -125,6 +126,12 @@ Tests include:
 
 Trusted credentials may create fixtures but must not be used for authorization assertions.
 
+WP7 uses exact dev dependency `supabase@2.115.0`, the existing `@supabase/supabase-js` client, and a dedicated test project under `tests/supabase/project`. `npm run verify:database` (`npm.cmd run verify:database` from Windows PowerShell) copies that project to a validated unique OS-temporary directory, starts one local Docker-backed Supabase stack, discovers and resets the test migration twice, runs the black-box Vitest assertions, and stops the stack with local volumes removed in `finally`. It does not link to, inspect, reset, or modify a remote project. Provider credentials obtained from local status are passed only to the child test process and are redacted from failure output.
+
+The current fixture deliberately models only a small security cross-section: blank-name and nonnegative-Quantity constraints, owner-preserving Category references, explicit GRANT versus RLS, anonymous and active/pending/deleting account states, User A/B isolation, and a private image bucket with owner/Item path checks, MIME/size restrictions, no upsert, and no direct client delete. Trusted service credentials create fixtures only; assertions use anonymous or signed-in user clients. Storage ownership lookup is isolated in a test-only private-schema function with a fixed empty `search_path`, revoked PUBLIC execution, and authenticated-only execution.
+
+This harness is foundation evidence, not a claim that the future production schema, live RLS/GRANT, Auth configuration, Storage policies, migrations, account-deletion workflow, or existing project are safe. The migration and table names are explicitly test-only and must not be promoted into Product migrations. Remaining scenarios listed above become enforceable only after their production schema or workflow exists; dedicated staging verification remains required before deployment.
+
 ### Browser E2E
 
 Playwright is the approved candidate. Begin with a primary browser for critical PR coverage and determine the release browser matrix separately.
@@ -184,8 +191,9 @@ Canonical local interfaces:
 - `npm run verify:unit` (`npm.cmd run verify:unit` from Windows PowerShell) runs the fixed Node unit-test suite with cache/output directed to a validated OS-temporary directory.
 - `npm run verify:coverage` (`npm.cmd run verify:coverage` from Windows PowerShell) runs V8 coverage with reports directed to the validated OS-temporary directory.
 - `npm run verify:integration` (`npm.cmd run verify:integration` from Windows PowerShell) runs the fixed jsdom Component/Router integration suite with cache/output directed to a validated OS-temporary directory.
+- `npm run verify:database` (`npm.cmd run verify:database` from Windows PowerShell) runs the fixed local-only Supabase migration and security harness. It requires a working Docker daemon and may download/start pinned local service images; it always requests local stack cleanup in `finally`.
 
-The wrapper accepts only registered task names and no additional arguments. The registered tasks are build, coverage, format, integration, lint, lint-gates, self-test, test-typecheck, typecheck, unit, and unit-self-test. A future generated-type, database, or browser task must be added to the internal allowlist by its separately approved work package. It must define fixed arguments, redirect supported outputs to OS temporary storage, and add any unavoidable workspace fallback output to the protected manifest.
+The wrapper accepts only registered task names and no additional arguments. The registered tasks are build, coverage, database, format, integration, lint, lint-gates, self-test, test-typecheck, typecheck, unit, and unit-self-test. A future generated-type or browser task must be added to the internal allowlist by its separately approved work package. It must define fixed arguments, redirect supported outputs to OS temporary storage, and add any unavoidable workspace fallback output to the protected manifest.
 
 All verification outputs must use a validated unique OS/runner temporary root where supported, including:
 
