@@ -62,6 +62,7 @@ Each work package requires its own bounded implementation plan and approval. Exa
 
 - [x] WP1: Pure Inventory Domain Core for fixed Units, Quantity, threshold, and derived stock status
 - [x] WP2: Pure Hybrid Attribute Definition catalog and versioned document codec
+- [x] WP3: Active Category Attribute selection from the current nullable Template key
 
 ## Phase 5 — Test and Review
 
