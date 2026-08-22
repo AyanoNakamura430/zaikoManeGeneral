@@ -2,14 +2,14 @@
 
 ## Status and Evidence Boundary
 
-The Phase 2 quality architecture is approved. The artifact-safe verification shell, initial strict TypeScript foundation, ESLint/Prettier architecture gates, and WP5-A Vitest runner foundation are implemented. Production Domain tests and their coverage baseline remain pending in WP5-B; later quality stages remain unimplemented.
+The Phase 2 quality architecture is approved. The artifact-safe verification shell, initial strict TypeScript foundation, ESLint/Prettier architecture gates, and WP5 Vitest/Domain foundation are implemented. Later quality stages remain unimplemented.
 
 Current repository facts:
 
 - the canonical artifact-safe strict typecheck is `npm run verify:typecheck` (use `npm.cmd` from Windows PowerShell); it completed without emitting files or changing protected workspace artifacts on 2026-08-17;
 - the canonical artifact-safe lint, architecture-gate, and format checks completed with zero warnings and without changing protected workspace artifacts on 2026-08-17;
 - the canonical artifact-safe Vitest runner, runner self-test, test typecheck, and coverage command completed without changing protected workspace artifacts on 2026-08-17;
-- the current Vitest suite contains only a runner-foundation smoke test; there are no production Domain tests and no meaningful coverage baseline yet;
+- the current Vitest suite contains the runner-foundation smoke test and critical tests for the first production Domain slice, Category comparison-name normalization;
 - no component, integration, database-security, or E2E test configuration;
 - the canonical artifact-safe build check is `npm run verify:build` (use `npm.cmd` from Windows PowerShell); it successfully built to an OS temporary directory without changing protected workspace artifacts on 2026-08-17;
 - no CI configuration is established.
@@ -95,7 +95,7 @@ Vitest is the approved candidate. Critical scenarios include:
 
 WP5-A uses exact dev dependencies `vitest@4.1.10` and `@vitest/coverage-v8@4.1.10`, the Node test environment, explicit imports rather than globals, and a separate strict test TypeScript project at `tests/tsconfig.json`. The runner rejects focused `.only` tests and an empty test selection. Its self-test verifies successful, failing, focused-only, and no-test processes in OS-temporary fixtures.
 
-The repository currently has no active production module under `src/domain`. The single `tests/unit/vitest-foundation.test.ts` smoke test verifies the runner only and is excluded from production coverage. It must not be reported as a Domain behavior test or coverage baseline. WP5-B requires a separately approved first Domain slice and critical tests before WP5 can be completed.
+The first production Domain slice is `normalizeCategoryNameKey`. Its named tests cover ASCII case equivalence, NFKC full-width normalization, leading/trailing Unicode whitespace, internal whitespace collapse, Japanese names and punctuation, blank input, idempotence, and preservation of meaningful differences. The separate `tests/unit/vitest-foundation.test.ts` smoke test remains excluded from production coverage and is not counted as Domain behavior coverage.
 
 ### Component and Router Integration
 
@@ -142,7 +142,7 @@ Do not set an arbitrary global percentage before a baseline exists.
 
 Exact numeric thresholds and diff-coverage capability require later approval.
 
-The WP5-A coverage command currently reports `0/0` with unknown percentages because no production Domain module exists. This is an explicit empty pre-baseline state, not a zero-percent baseline and not a ratchet. Coverage is configured to include `src/domain/**/*.ts`; once an approved production Domain module exists, untested matching modules enter the report rather than being hidden.
+The first meaningful baseline was measured on 2026-08-22 over the active `src/domain/**/*.ts` scope: Statements 100% (2/2), Functions 100% (1/1), and Lines 100% (2/2). The implementation contains no branches, so Branches reports 100% (0/0) and is not evidence of exercised branch behavior. This baseline describes the initial one-module scope only; it is not a repository-wide quality claim. No numeric threshold or ratchet is configured yet, pending separate approval after baseline review.
 
 ## CI Gate Layers
 

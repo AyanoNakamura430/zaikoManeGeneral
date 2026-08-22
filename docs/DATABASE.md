@@ -57,7 +57,9 @@ Candidate fields and constraints:
 - one row per `(user_id, template_key)` for system-derived Categories;
 - unique `(user_id, name_key)` across system and custom Categories.
 
-`name_key` uses the approved normalization intent: Unicode NFKC, trim, internal whitespace collapse, and case fold. The exact implementation and test vectors require approval.
+`name_key` uses the approved normalization contract implemented by the pure Domain function `normalizeCategoryNameKey`: Unicode NFKC, replacement of one or more Unicode `White_Space` characters with one ASCII space, trim, then locale-independent JavaScript `toLowerCase()`. This key is for comparison only and does not rewrite the display name. Blank input produces an empty key so the later Domain/Application required-name validation can reject it without inventing a replacement name.
+
+Changing this normalization contract after persisted Categories exist is a data-compatibility change: application validation, migration/backfill logic, existing `name_key` values, and the unique owner/name constraint must be reviewed together.
 
 System-derived Categories have fixed name, deletion, and order behavior; the user may change their approved preset color. Custom Categories permit name, color, order, and deletion. Frontend clients cannot create arbitrary system-derived rows or change Template linkage.
 
