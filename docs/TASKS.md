@@ -67,6 +67,7 @@ Each work package requires its own bounded implementation plan and approval. Exa
 - [x] WP4: Pure Search query normalization, tokenization, and multi-field AND matching
 - [x] WP5: Item Search-field assembly from approved common fields and active searchable Attributes
 - [x] WP6: Category name validation and system/custom protection policy
+- [x] WP7: Item name, runtime Unit, Quantity, and threshold core validation
 
 ## Phase 5 — Test and Review
 

@@ -65,7 +65,18 @@ export const UNIT_CATALOG: readonly UnitDefinition[] = Object.freeze(
 
 export const DEFAULT_UNIT: UnitKind = "point";
 export const DEFAULT_QUANTITY = 1;
-
+export type UnitParseError = Readonly<{ code: "invalid_unit"; field: "unit" }>;
+export type UnitParseResult =
+  | { readonly ok: true; readonly value: UnitKind }
+  | { readonly ok: false; readonly error: UnitParseError };
+export function parseUnitKind(value: unknown): UnitParseResult {
+  if (
+    typeof value !== "string" ||
+    !UNIT_CATALOG.some((unit) => unit.kind === value)
+  )
+    return { ok: false, error: { code: "invalid_unit", field: "unit" } };
+  return { ok: true, value: value as UnitKind };
+}
 export function getUnitDefinition(kind: UnitKind): UnitDefinition {
   const definition = UNIT_CATALOG.find((unit) => unit.kind === kind);
   if (!definition) throw new Error(`Unknown unit kind: ${kind}`);

@@ -4,6 +4,7 @@ import {
   DEFAULT_UNIT,
   UNIT_CATALOG,
   getUnitDefinition,
+  parseUnitKind,
 } from "../../../../src/domain/inventory/unit";
 
 describe("inventory unit catalog", () => {
@@ -49,6 +50,21 @@ describe("inventory unit catalog", () => {
   it("freezes catalog and entries", () => {
     expect(Object.isFrozen(UNIT_CATALOG)).toBe(true);
     for (const entry of UNIT_CATALOG) expect(Object.isFrozen(entry)).toBe(true);
+  });
+  it("parses every stable unit key and rejects unsafe runtime values", () => {
+    for (const entry of UNIT_CATALOG)
+      expect(parseUnitKind(entry.kind)).toEqual({
+        ok: true,
+        value: entry.kind,
+      });
+    expect(parseUnitKind("unknown")).toEqual({
+      ok: false,
+      error: { code: "invalid_unit", field: "unit" },
+    });
+    expect(parseUnitKind(1)).toEqual({
+      ok: false,
+      error: { code: "invalid_unit", field: "unit" },
+    });
   });
   it("returns immutable unit definitions", () =>
     expect(getUnitDefinition("meter")).toEqual({
