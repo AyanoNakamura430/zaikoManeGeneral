@@ -44,6 +44,38 @@ describe("hybrid attribute document", () => {
         "L",
       ),
     ).toMatchObject({ ok: false, error: { code: "type_mismatch" } });
+    expect(
+      patchHybridDocument(base, "daily_goods", "opened", 1 as never),
+    ).toEqual({
+      ok: false,
+      error: {
+        code: "type_mismatch",
+        categoryKey: "daily_goods",
+        key: "opened",
+      },
+    });
+  });
+  it("returns invalid_document for malformed document structure", () => {
+    for (const input of [
+      null,
+      [],
+      { version: 2, categories: {} },
+      { version: 1 },
+    ]) {
+      expect(validateHybridDocument(input)).toEqual({
+        ok: false,
+        error: { code: "invalid_document", categoryKey: "" },
+      });
+    }
+    expect(
+      validateHybridDocument({
+        version: 1,
+        categories: { daily_goods: [] },
+      }),
+    ).toEqual({
+      ok: false,
+      error: { code: "invalid_document", categoryKey: "daily_goods" },
+    });
   });
   it("rejects non-JSON unknown values and returns an immutable snapshot", () => {
     expect(
@@ -115,6 +147,25 @@ describe("hybrid attribute document", () => {
     expect(Object.isFrozen(patched.value.categories.daily_goods!.unknown)).toBe(
       true,
     );
+  });
+  it("preserves every hidden category namespace while patching the current one", () => {
+    const document = valueOf(
+      validateHybridDocument({
+        version: 1,
+        categories: {
+          daily_goods: { opened: true },
+          food_beverage: {
+            content_amount: "500 mL",
+            unknown: { retained: true },
+          },
+        },
+      }),
+    );
+    const hiddenBefore = document.categories.food_beverage;
+    const patched = valueOf(
+      patchHybridDocument(document, "daily_goods", "spec_size", "L"),
+    );
+    expect(patched.categories.food_beverage).toEqual(hiddenBefore);
   });
   it("deletes only the exact empty text value and retains whitespace", () => {
     expect(

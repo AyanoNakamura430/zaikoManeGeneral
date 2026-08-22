@@ -102,7 +102,7 @@ Vitest is the approved candidate. Critical scenarios include:
 
 WP5-A uses exact dev dependencies `vitest@4.1.10` and `@vitest/coverage-v8@4.1.10`, the Node test environment, explicit imports rather than globals, and a separate strict test TypeScript project at `tests/tsconfig.json`. The runner rejects focused `.only` tests and an empty test selection. Its self-test verifies successful, failing, focused-only, and no-test processes in OS-temporary fixtures.
 
-The first production Domain slices are `normalizeCategoryNameKey`, the fixed-Unit inventory core, and the Hybrid Attribute contract and codec. Named tests cover Category comparison normalization; the exact 18-Unit catalog and runtime immutability; Unit-key-bound opaque Quantity and threshold validation; finite, non-negative, count-integer, decimal-measurement, and negative-zero behavior; `out`, `low`, and `available` status derivation; the exact fixed Attribute Definition catalog; known-value type validation; valid unknown-JSON preservation; active/hidden Category selection; non-destructive patching; and immutable snapshot isolation. The separate `tests/unit/vitest-foundation.test.ts` smoke test remains excluded from production coverage and is not counted as Domain behavior coverage.
+The first production Domain slices are `normalizeCategoryNameKey`, the fixed-Unit inventory core, and the Hybrid Attribute contract and codec. Named tests cover Category comparison normalization; the exact 18-Unit catalog and runtime immutability; Unit-key-bound opaque Quantity and threshold validation; finite, non-negative, count-integer, decimal-measurement, and negative-zero behavior; `out`, `low`, and `available` status derivation; the exact fixed Attribute Definition catalog; known-value type validation; valid unknown-JSON preservation; hidden Category namespace retention during non-destructive patching; and immutable snapshot isolation. Active-value selection for a current Category remains a later Domain/Application slice. The separate `tests/unit/vitest-foundation.test.ts` smoke test remains excluded from production coverage and is not counted as Domain behavior coverage.
 
 ### Component and Router Integration
 
@@ -161,7 +161,7 @@ Do not set an arbitrary global percentage before a baseline exists.
 
 Exact numeric thresholds and diff-coverage capability require later approval.
 
-The first meaningful baseline was measured on 2026-08-22 over the active `src/domain/**/*.ts` scope: Statements 100% (2/2), Functions 100% (1/1), and Lines 100% (2/2). The implementation contains no branches, so Branches reports 100% (0/0) and is not evidence of exercised branch behavior. This baseline describes the initial one-module scope only; it is not a repository-wide quality claim. No numeric threshold or ratchet is configured yet, pending separate approval after baseline review.
+The current Domain baseline was measured on 2026-08-22 after the Phase 5 WP1 integration checkpoint over the active `src/domain/**/*.ts` scope: Statements 100% (82/82), Branches 98.64% (73/74), Functions 100% (20/20), and Lines 100% (72/72). The suite completed 7 files and 28 tests. This is a Domain-only baseline, not a repository-wide quality claim, and it does not cover the frozen legacy application or future Product integration. No numeric threshold or ratchet is configured yet; setting one requires separate approval.
 
 ## CI Gate Layers
 

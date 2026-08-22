@@ -65,7 +65,9 @@ Each work package requires its own bounded implementation plan and approval. Exa
 
 ## Phase 5 — Test and Review
 
-Not started.
+- [x] WP1: Phase 4 Domain integration-test, coverage-baseline, and independent-review checkpoint
+
+Further Product integration, data-security, browser, and release review remain pending until their production implementation slices exist. Phase 5 is not complete.
 
 ## Phase 6 — Deployment
 
