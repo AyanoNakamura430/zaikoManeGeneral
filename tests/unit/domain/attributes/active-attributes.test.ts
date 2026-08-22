@@ -6,7 +6,7 @@ const document: HybridDocument = {
   version: 1,
   categories: {
     daily_goods: { opened: true, legacy: "hidden" },
-    food_beverage: { capacity: "500mL" },
+    food_beverage: { content_amount: "500mL" },
   },
 };
 describe("active category attributes", () => {
