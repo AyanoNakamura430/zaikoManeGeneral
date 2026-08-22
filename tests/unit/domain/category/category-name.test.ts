@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeCategoryNameKey } from "../../../../src/domain/category/category-name";
+import {
+  normalizeCategoryNameKey,
+  validateCategoryName,
+  type ValidatedCategoryName,
+} from "../../../../src/domain/category/category-name";
 
 describe("normalizeCategoryNameKey", () => {
   it("normalizes ASCII letter case", () => {
@@ -40,5 +44,34 @@ describe("normalizeCategoryNameKey", () => {
     expect(normalizeCategoryNameKey("工具・用品")).not.toBe(
       normalizeCategoryNameKey("工具用品"),
     );
+  });
+});
+
+describe("validateCategoryName", () => {
+  it("preserves displayName and only normalizes nameKey", () => {
+    const result = validateCategoryName("  Food　Supplies ", []);
+    expect(result).toMatchObject({
+      ok: true,
+      value: { displayName: "  Food　Supplies ", nameKey: "food supplies" },
+    });
+    if (result.ok) expect(Object.isFrozen(result.value)).toBe(true);
+  });
+  it("rejects blank and normalized duplicate names", () => {
+    expect(validateCategoryName("\u00a0\t", [])).toEqual({
+      ok: false,
+      error: { code: "blank_name" },
+    });
+    expect(validateCategoryName(" FOOD ", [" ＦＯＯＤ　"])).toEqual({
+      ok: false,
+      error: { code: "duplicate_name" },
+    });
+  });
+  it("does not accept a hand-crafted validated name", () => {
+    // @ts-expect-error ValidatedCategoryName has a module-private opaque brand.
+    const handCrafted: ValidatedCategoryName = {
+      displayName: "Food",
+      nameKey: "food",
+    };
+    expect(handCrafted).toBeDefined();
   });
 });

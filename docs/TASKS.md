@@ -66,6 +66,7 @@ Each work package requires its own bounded implementation plan and approval. Exa
 - [x] WP3A: Pre-persistence Attribute Definition contract correction to the approved Product table
 - [x] WP4: Pure Search query normalization, tokenization, and multi-field AND matching
 - [x] WP5: Item Search-field assembly from approved common fields and active searchable Attributes
+- [x] WP6: Category name validation and system/custom protection policy
 
 ## Phase 5 — Test and Review
 
