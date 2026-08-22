@@ -61,7 +61,7 @@ Each work package requires its own bounded implementation plan and approval. Exa
 ## Phase 4 — Implementation
 
 - [x] WP1: Pure Inventory Domain Core for fixed Units, Quantity, threshold, and derived stock status
-- [ ] WP2: Define the next bounded implementation slice after prerequisite review
+- [x] WP2: Pure Hybrid Attribute Definition catalog and versioned document codec
 
 ## Phase 5 — Test and Review
 
