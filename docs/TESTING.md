@@ -2,7 +2,7 @@
 
 ## Status and Evidence Boundary
 
-The Phase 2 quality architecture is approved. The artifact-safe verification shell, initial strict TypeScript foundation, ESLint/Prettier architecture gates, and WP5 Vitest/Domain foundation are implemented. Later quality stages remain unimplemented.
+The Phase 2 quality architecture is approved. The artifact-safe verification shell, initial strict TypeScript foundation, ESLint/Prettier architecture gates, WP5 Vitest/Domain foundation, and WP6 Component/Router integration-test foundation are implemented. Later quality stages remain unimplemented.
 
 Current repository facts:
 
@@ -10,7 +10,8 @@ Current repository facts:
 - the canonical artifact-safe lint, architecture-gate, and format checks completed with zero warnings and without changing protected workspace artifacts on 2026-08-17;
 - the canonical artifact-safe Vitest runner, runner self-test, test typecheck, and coverage command completed without changing protected workspace artifacts on 2026-08-17;
 - the current Vitest suite contains the runner-foundation smoke test and critical tests for the first production Domain slice, Category comparison-name normalization;
-- no component, integration, database-security, or E2E test configuration;
+- the canonical artifact-safe Component/Router integration suite completed 2 files and 3 tests without changing protected workspace artifacts on 2026-08-22;
+- no database-security or E2E test configuration;
 - the canonical artifact-safe build check is `npm run verify:build` (use `npm.cmd` from Windows PowerShell); it successfully built to an OS temporary directory without changing protected workspace artifacts on 2026-08-17;
 - no CI configuration is established.
 
@@ -103,6 +104,10 @@ Use React Testing Library, user-event, DOM accessibility matchers, and an in-mem
 
 Critical scenarios include form validation, dirty/reset behavior, unsaved guards, route protection, refresh and Back/replace semantics, explicit loading/empty/no-results/error states, Auth expiry, keyboard/focus behavior, and image partial-result messaging.
 
+WP6 uses exact dev dependencies `@testing-library/react@16.3.2`, `@testing-library/dom@10.4.1`, `@testing-library/user-event@14.6.6`, `@testing-library/jest-dom@7.0.1`, and `jsdom@30.0.1`. The separate `vitest.integration.config.mjs` inherits the artifact boundary and runner policies from the Node unit configuration but replaces the test selection and environment with `tests/integration/**/*.test.tsx` and jsdom. DOM matchers and cleanup are test-only setup concerns.
+
+The foundation fixtures prove accessible role queries, user-event interaction and focus, a React Router direct entry, and push, replace, and Back history behavior through `createMemoryRouter` and `RouterProvider`. They do not implement or claim coverage of the production route contract, Auth protection, forms, approved UI, refresh at the browser/hosting boundary, or Product behavior. Those scenarios require approved production slices and later integration/E2E tests.
+
 ### Database, RLS, and Storage
 
 Use an ephemeral local Supabase environment as the primary repeatable security harness, with dedicated staging verification before deployment.
@@ -178,8 +183,9 @@ Canonical local interfaces:
 - `npm run verify:unit-self-test` (`npm.cmd run verify:unit-self-test` from Windows PowerShell) checks Vitest pass, failure, focused-only, and no-test exit behavior in OS-temporary fixtures.
 - `npm run verify:unit` (`npm.cmd run verify:unit` from Windows PowerShell) runs the fixed Node unit-test suite with cache/output directed to a validated OS-temporary directory.
 - `npm run verify:coverage` (`npm.cmd run verify:coverage` from Windows PowerShell) runs V8 coverage with reports directed to the validated OS-temporary directory.
+- `npm run verify:integration` (`npm.cmd run verify:integration` from Windows PowerShell) runs the fixed jsdom Component/Router integration suite with cache/output directed to a validated OS-temporary directory.
 
-The wrapper accepts only registered task names and no additional arguments. The registered tasks are build, coverage, format, lint, lint-gates, self-test, test-typecheck, typecheck, unit, and unit-self-test. A future component, generated-type, database, or browser task must be added to the internal allowlist by its separately approved work package. It must define fixed arguments, redirect supported outputs to OS temporary storage, and add any unavoidable workspace fallback output to the protected manifest.
+The wrapper accepts only registered task names and no additional arguments. The registered tasks are build, coverage, format, integration, lint, lint-gates, self-test, test-typecheck, typecheck, unit, and unit-self-test. A future generated-type, database, or browser task must be added to the internal allowlist by its separately approved work package. It must define fixed arguments, redirect supported outputs to OS temporary storage, and add any unavoidable workspace fallback output to the protected manifest.
 
 All verification outputs must use a validated unique OS/runner temporary root where supported, including:
 

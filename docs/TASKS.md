@@ -50,7 +50,7 @@ This tracks phase status; requirements and design belong in their owning documen
 - [x] WP5: Vitest Domain unit-test foundation and coverage baseline
   - [x] WP5-A: Artifact-safe Vitest runner, strict test project, and empty pre-baseline coverage command
   - [x] WP5-B: First approved production Domain slice, critical unit tests, and meaningful coverage baseline
-- [ ] WP6: Component and Router integration-test foundation
+- [x] WP6: Component and Router integration-test foundation
 - [ ] WP7: Ephemeral Supabase migration, constraint, RLS, GRANT, and Storage harness
 - [ ] WP8: Generated database type drift gate after initial migrations exist
 - [ ] WP9: Playwright critical E2E foundation
