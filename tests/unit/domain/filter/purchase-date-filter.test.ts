@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createPurchaseDateRange,
+  isAuthenticPurchaseDateRange,
   matchesPurchaseDate,
   parsePurchaseDate,
 } from "../../../../src/domain/filter/purchase-date-filter";
@@ -100,6 +101,8 @@ describe("purchase date filter", () => {
 
   it("keeps authentic ranges immutable and rejects forged copies", () => {
     const valid = range({ from: "2024-01-01" });
+    expect(isAuthenticPurchaseDateRange(valid)).toBe(true);
+    expect(isAuthenticPurchaseDateRange({ ...valid })).toBe(false);
     expect(Object.isFrozen(valid)).toBe(true);
     const copied = { ...valid } as never;
     expect(() => matchesPurchaseDate(copied, "2024-01-01")).not.toThrow();

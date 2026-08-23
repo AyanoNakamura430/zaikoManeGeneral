@@ -5,6 +5,11 @@ import { parseUnitKind, type UnitKind } from "../inventory/unit";
 declare const categoryIdBrand: unique symbol;
 const filterBrand = Symbol("InventoryFilter");
 const validFilters = new WeakSet<object>();
+export function isAuthenticInventoryFilter(
+  value: unknown,
+): value is InventoryFilter {
+  return value !== null && typeof value === "object" && validFilters.has(value);
+}
 export type CategoryId = string & { readonly [categoryIdBrand]: true };
 export type CategorySelection =
   | { readonly kind: "category"; readonly id: CategoryId }
@@ -118,7 +123,7 @@ export function matchesInventoryFilter(
     typeof input !== "object"
   )
     return false;
-  if (!validFilters.has(filter)) return false;
+  if (!isAuthenticInventoryFilter(filter)) return false;
   const item = input as InventoryItem;
   if (!matchesCategory(filter, item.categoryId)) return false;
   const unit = parseUnitKind(item.unit);

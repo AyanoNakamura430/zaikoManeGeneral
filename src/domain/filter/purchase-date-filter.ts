@@ -17,6 +17,13 @@ export type Result<T> =
   | { readonly ok: false; readonly error: PurchaseDateFilterError };
 
 const rangeMembership = new WeakSet<object>();
+export function isAuthenticPurchaseDateRange(
+  value: unknown,
+): value is PurchaseDateRange {
+  return (
+    value !== null && typeof value === "object" && rangeMembership.has(value)
+  );
+}
 const datePattern = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 function daysInMonth(year: number, month: number): number {
@@ -93,8 +100,7 @@ export function matchesPurchaseDate(
   range: PurchaseDateRange,
   purchaseDate: unknown,
 ): boolean {
-  if (!range || typeof range !== "object" || !rangeMembership.has(range))
-    return false;
+  if (!isAuthenticPurchaseDateRange(range)) return false;
   if (range.from === undefined && range.to === undefined) return true;
   if (!isValidDate(purchaseDate)) return false;
   if (range.from !== undefined && purchaseDate < range.from) return false;

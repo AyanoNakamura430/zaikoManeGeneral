@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createInventoryFilter,
+  isAuthenticInventoryFilter,
   matchesInventoryFilter,
   parseCategoryId,
 } from "../../../../src/domain/filter/inventory-filter";
@@ -100,6 +101,8 @@ describe("inventory filter", () => {
       categories: [{ kind: "category", id: "food" }],
     });
     if (!result.ok) throw new Error("fixture failed");
+    expect(isAuthenticInventoryFilter(result.value)).toBe(true);
+    expect(isAuthenticInventoryFilter({ ...result.value })).toBe(false);
     expect(Object.isFrozen(result.value)).toBe(true);
     expect(Object.isFrozen(result.value.categories)).toBe(true);
     expect(Object.isFrozen(result.value.categories[0])).toBe(true);

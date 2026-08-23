@@ -2,7 +2,7 @@
 
 ## Status and Current Gap
 
-The target frontend architecture is approved but not implemented. The current `src/app/App.tsx` still couples UI, state, validation, Auth, CRUD, Storage, Search, Filter, Sort, and LocalStorage fallback. See [`CURRENT_STATE.md`](CURRENT_STATE.md).
+The target frontend architecture is approved and partially implemented through pure Domain modules, provider-neutral Application errors and collection states, an Inventory read port with no caller-supplied owner ID, and the Inventory list use case. Owner and session binding remains an Adapter responsibility. No adapter, new application shell, Router integration, or Product screen uses those contracts yet. The current `src/app/App.tsx` still couples UI, state, validation, Auth, CRUD, Storage, Search, Filter, Sort, and LocalStorage fallback. See [`CURRENT_STATE.md`](CURRENT_STATE.md).
 
 `react-router` and `react-hook-form` are installed but unused by the current entry graph. Their exact current APIs, Vite integration, and deployment behavior must be verified before implementation. Existing MUI, Radix/shadcn-style, custom UI, and Figma assets are not automatically approved.
 

@@ -36,7 +36,7 @@ export default defineConfig({
     coverage: {
       clean: true,
       exclude: ["tests/**"],
-      include: ["src/domain/**/*.ts"],
+      include: ["src/{application,domain}/**/*.ts"],
       provider: "v8",
       reporter: ["text", "json-summary"],
       reportsDirectory: join(outputRoot, "coverage"),

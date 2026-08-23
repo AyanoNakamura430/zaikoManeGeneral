@@ -71,6 +71,10 @@ Each work package requires its own bounded implementation plan and approval. Exa
 - [x] WP8: Auth return-target allowlist and open-redirect rejection
 - [x] WP9: Inventory Category, stock-status, and Unit filter Domain core
 - [x] WP10: Purchase-date range filter Domain core
+- [x] WP11: Inventory Search and Filter query composition
+- [x] WP12: Provider-neutral Application errors and Inventory collection states
+- [x] WP13: Inventory read port and list use case
+- [x] WP14: Provider-neutral Inventory read milestone integration and review checkpoint
 
 ## Phase 5 — Test and Review
 
