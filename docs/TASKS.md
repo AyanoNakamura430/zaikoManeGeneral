@@ -68,6 +68,7 @@ Each work package requires its own bounded implementation plan and approval. Exa
 - [x] WP5: Item Search-field assembly from approved common fields and active searchable Attributes
 - [x] WP6: Category name validation and system/custom protection policy
 - [x] WP7: Item name, runtime Unit, Quantity, and threshold core validation
+- [x] WP8: Auth return-target allowlist and open-redirect rejection
 
 ## Phase 5 — Test and Review
 
