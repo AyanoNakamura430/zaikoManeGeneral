@@ -70,6 +70,7 @@ Each work package requires its own bounded implementation plan and approval. Exa
 - [x] WP7: Item name, runtime Unit, Quantity, and threshold core validation
 - [x] WP8: Auth return-target allowlist and open-redirect rejection
 - [x] WP9: Inventory Category, stock-status, and Unit filter Domain core
+- [x] WP10: Purchase-date range filter Domain core
 
 ## Phase 5 — Test and Review
 
