@@ -75,6 +75,10 @@ Each work package requires its own bounded implementation plan and approval. Exa
 - [x] WP12: Provider-neutral Application errors and Inventory collection states
 - [x] WP13: Inventory read port and list use case
 - [x] WP14: Provider-neutral Inventory read milestone integration and review checkpoint
+- [x] WP15: Strict Instant and Inventory Sort specification
+- [x] WP16: Deterministic Inventory Sort Domain core
+- [x] WP17: Inventory list query, filter, and sort integration
+- [x] WP18: Inventory sort milestone verification, review, and documentation checkpoint
 
 ## Phase 5 — Test and Review
 
