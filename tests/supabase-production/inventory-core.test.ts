@@ -1,7 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { beforeAll, describe, expect, it } from "vitest";
 
+import { createSupabaseInventoryReadAdapter } from "../../src/adapters/supabase/supabase-inventory-read-adapter";
 import { normalizeCategoryNameKey } from "../../src/domain/category/category-name";
+import type { Database } from "../../src/infrastructure/supabase/database.generated";
 
 const env =
   (
@@ -24,6 +26,11 @@ const users = {
   pending: createClient(url, publicKey, options),
   deleting: createClient(url, publicKey, options),
 };
+const adapterUsers = {
+  a: createClient<Database>(url, publicKey, options),
+  b: createClient<Database>(url, publicKey, options),
+};
+const adapterAnonymous = createClient<Database>(url, publicKey, options);
 const ids = { a: "", b: "", pending: "", deleting: "" };
 const password = "Local-only-password-123!";
 const randomUUID = () => globalThis.crypto.randomUUID();
@@ -47,6 +54,14 @@ beforeAll(async () => {
     });
     if (signedIn.error)
       throw new Error(`Fixture user ${name} could not sign in.`);
+    if (name === "a" || name === "b") {
+      const adapterSignedIn = await adapterUsers[name].auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (adapterSignedIn.error)
+        throw new Error(`Adapter fixture user ${name} could not sign in.`);
+    }
   }
   const accounts = await service.from("application_accounts").insert([
     { user_id: ids.a, status: "active" },
@@ -237,6 +252,74 @@ describe("production reference data and grants", () => {
         })
       ).error,
     ).not.toBeNull();
+  });
+});
+
+describe("production Inventory read adapter", () => {
+  it("server-verifies the user and maps only RLS-visible relational rows", async () => {
+    const category = await adapterUsers.a
+      .from("categories")
+      .insert({
+        user_id: ids.a,
+        name: `Adapter category ${randomUUID()}`,
+        name_key: "generated-by-trigger",
+        sort_order: 900,
+      })
+      .select("id,name")
+      .single();
+    expect(category.error).toBeNull();
+    if (!category.data) throw new Error("Adapter category fixture is missing.");
+
+    const inserted = await adapterUsers.a
+      .from("items")
+      .insert({
+        user_id: ids.a,
+        category_id: category.data.id,
+        item_name: `Adapter item ${randomUUID()}`,
+        quantity: 1.25,
+        unit: "kilogram",
+        low_stock_threshold: 0.5,
+        notes: "Adapter integration",
+        purchase_date: "2026-08-30",
+      })
+      .select("id,item_name")
+      .single();
+    expect(inserted.error).toBeNull();
+    if (!inserted.data) throw new Error("Adapter item fixture is missing.");
+
+    const adapterA = createSupabaseInventoryReadAdapter(adapterUsers.a);
+    const resultA = await adapterA.readAll();
+    expect(resultA.ok).toBe(true);
+    if (!resultA.ok) return;
+    const mapped = resultA.value.find((item) => item.id === inserted.data.id);
+    expect(mapped).toMatchObject({
+      id: inserted.data.id,
+      itemName: inserted.data.item_name,
+      categoryId: category.data.id,
+      categoryName: category.data.name,
+      currentTemplateKey: null,
+      unit: "kilogram",
+      quantity: 1.25,
+      threshold: 0.5,
+      notes: "Adapter integration",
+      purchaseDate: "2026-08-30",
+    });
+
+    const resultB = await createSupabaseInventoryReadAdapter(
+      adapterUsers.b,
+    ).readAll();
+    expect(resultB.ok).toBe(true);
+    if (resultB.ok)
+      expect(resultB.value.some((item) => item.id === inserted.data.id)).toBe(
+        false,
+      );
+
+    await expect(
+      createSupabaseInventoryReadAdapter(adapterAnonymous).readAll(),
+    ).resolves.toEqual({
+      ok: false,
+      error: { code: "authentication_expired" },
+    });
   });
 });
 
@@ -555,7 +638,7 @@ describe("production item constraints and isolation", () => {
       { quantity: 1, unit: "unknown" },
       { quantity: 1.5, unit: "piece" },
       { quantity: -1, unit: "meter" },
-      { quantity: 100000000000000, unit: "meter" },
+      { quantity: 1000000000, unit: "meter" },
       { quantity: 0.0000001, unit: "meter" },
       { quantity: 1, low_stock_threshold: 0.0000001, unit: "meter" },
     ]) {
@@ -576,6 +659,34 @@ describe("production item constraints and isolation", () => {
         })
       ).error,
     ).toBeNull();
+    const maximum = await adapterUsers.a
+      .from("items")
+      .insert({
+        user_id: ids.a,
+        item_name: "Maximum safe scaled amount",
+        quantity: 999999999.999999,
+        low_stock_threshold: 999999999.999998,
+        unit: "meter",
+      })
+      .select("id,quantity,low_stock_threshold")
+      .single();
+    expect(maximum.error).toBeNull();
+    expect(typeof maximum.data?.id).toBe("string");
+    expect(maximum.data?.quantity).toBe(999999999.999999);
+    expect(maximum.data?.low_stock_threshold).toBe(999999999.999998);
+    const adapterResult = await createSupabaseInventoryReadAdapter(
+      adapterUsers.a,
+    ).readAll();
+    expect(adapterResult.ok).toBe(true);
+    if (adapterResult.ok) {
+      const mappedMaximum = adapterResult.value.find(
+        (item) => item.id === maximum.data?.id,
+      );
+      expect(mappedMaximum).toMatchObject({
+        quantity: 999999999.999999,
+        threshold: 999999999.999998,
+      });
+    }
     expect(
       (
         await users.a.from("items").insert([

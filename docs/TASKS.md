@@ -80,6 +80,7 @@ Each work package requires its own bounded implementation plan and approval. Exa
 - [x] WP17: Inventory list query, filter, and sort integration
 - [x] WP18: Inventory sort milestone verification, review, and documentation checkpoint
 - [x] WP19: Local production Supabase Inventory core migration, security matrix, and generated-type gate
+- [x] WP20: Supabase Inventory read adapter, runtime row decoder, and local integration gate
 
 ## Phase 5 — Test and Review
 

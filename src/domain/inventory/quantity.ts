@@ -36,7 +36,7 @@ function validateAmount(
   if (!Number.isFinite(value))
     return { ok: false, error: { code: "not_finite", field } };
   if (value < 0) return { ok: false, error: { code: "negative", field } };
-  if (value >= 100_000_000_000_000)
+  if (value >= 1_000_000_000)
     return { ok: false, error: { code: "too_large", field } };
   const decimal = value.toString().toLowerCase();
   const [coefficient = "", exponentText] = decimal.split("e");

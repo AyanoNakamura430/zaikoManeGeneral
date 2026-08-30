@@ -68,6 +68,10 @@ try {
   const schema = await cli(["db", "query", "--local", "select to_regclass('public.items') as items, to_regclass('public.categories') as categories", "--output-format", "json"]);
   assertStage("production schema check", schema);
   if (!schema.stdout.includes("items") || !schema.stdout.includes("categories")) throw new Error("Production core relations are missing.");
+  assertStage(
+    "production database advisors",
+    await cli(["db", "advisors", "--local", "--type", "all", "--fail-on", "error"]),
+  );
   const status = await cli(["status", "--output", "json"]);
   assertStage("production local status", status);
   const local = JSON.parse(status.stdout);
