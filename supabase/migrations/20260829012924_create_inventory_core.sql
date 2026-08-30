@@ -166,6 +166,9 @@ revoke all on all functions in schema private from public, anon, authenticated;
 grant usage on schema private to authenticated;
 grant execute on function private.normalize_category_name(text) to authenticated;
 grant execute on function private.validate_item_attributes(jsonb) to authenticated;
+grant usage on schema private to service_role;
+grant execute on function private.normalize_category_name(text) to service_role;
+grant execute on function private.validate_item_attributes(jsonb) to service_role;
 
 alter table public.items add constraint items_name_not_blank check (private.normalize_category_name(item_name) <> '');
 

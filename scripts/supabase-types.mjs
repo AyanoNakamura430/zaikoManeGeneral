@@ -1,14 +1,29 @@
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { cp, lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import {
+  cp,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import prettier from "prettier";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const generatedPath = join(repositoryRoot, "tests", "supabase", "generated", "database.generated.ts");
-const sourceProject = join(repositoryRoot, "tests", "supabase", "project");
+const generatedPath = join(
+  repositoryRoot,
+  "src",
+  "infrastructure",
+  "supabase",
+  "database.generated.ts",
+);
+const sourceSupabase = join(repositoryRoot, "supabase");
 const configuredOutput = process.env.ZAIKO_TEST_OUTPUT_DIR;
 const [mode, ...extraArguments] = process.argv.slice(2);
 const generatedHeader = [
@@ -19,25 +34,48 @@ const generatedHeader = [
 
 const isInside = (parent, child) => {
   const value = relative(parent, child);
-  return value !== "" && value !== ".." && !value.startsWith(`..${sep}`) && !isAbsolute(value);
+  return (
+    value !== "" &&
+    value !== ".." &&
+    !value.startsWith(`..${sep}`) &&
+    !isAbsolute(value)
+  );
 };
 
-if (!(mode === "check" || mode === "update" || mode === "self-test") || extraArguments.length > 0) {
-  throw new Error("Expected exactly one generated-type mode: check, update, or self-test.");
+if (
+  !(mode === "check" || mode === "update" || mode === "self-test") ||
+  extraArguments.length > 0
+) {
+  throw new Error(
+    "Expected exactly one generated-type mode: check, update, or self-test.",
+  );
 }
 if (mode !== "update" && (!configuredOutput || !isAbsolute(configuredOutput))) {
-  throw new Error("Run generated-type checks through the artifact-safe verification script.");
+  throw new Error(
+    "Run generated-type checks through the artifact-safe verification script.",
+  );
 }
 if (mode === "update" && configuredOutput) {
-  throw new Error("The explicit update command manages its own temporary output boundary.");
+  throw new Error(
+    "The explicit update command manages its own temporary output boundary.",
+  );
 }
 
-const ownedOutput = mode === "update" ? await mkdtemp(join(await realpath(tmpdir()), "zaiko-wp8-types-")) : null;
+const ownedOutput =
+  mode === "update"
+    ? await mkdtemp(join(await realpath(tmpdir()), "zaiko-wp19-types-"))
+    : null;
 const outputRoot = await realpath(configuredOutput ?? ownedOutput);
 const temporaryRoot = await realpath(tmpdir());
 const workspaceRoot = await realpath(repositoryRoot);
-if (!isInside(temporaryRoot, outputRoot) || outputRoot === temporaryRoot || isInside(workspaceRoot, outputRoot)) {
-  throw new Error("Refusing a type-generation directory outside the validated OS temporary boundary.");
+if (
+  !isInside(temporaryRoot, outputRoot) ||
+  outputRoot === temporaryRoot ||
+  isInside(workspaceRoot, outputRoot)
+) {
+  throw new Error(
+    "Refusing a type-generation directory outside the validated OS temporary boundary.",
+  );
 }
 
 const sameBytes = (left, right) => Buffer.compare(left, right) === 0;
@@ -46,7 +84,9 @@ class GeneratedTypesDriftError extends Error {}
 
 function assertGeneratedTypesMatch(committed, candidate) {
   if (!sameBytes(committed, candidate)) {
-    throw new GeneratedTypesDriftError("Generated database types drifted; run the explicit update command.");
+    throw new GeneratedTypesDriftError(
+      "Generated database types drifted; run the explicit update command.",
+    );
   }
 }
 
@@ -55,7 +95,13 @@ async function runSelfTest() {
   const exactCandidate = join(outputRoot, "exact.generated.ts");
   const driftedCandidate = join(outputRoot, "drifted.generated.ts");
   await writeFile(exactCandidate, committed);
-  await writeFile(driftedCandidate, Buffer.concat([committed, Buffer.from("// intentional drift fixture\n", "utf8")]));
+  await writeFile(
+    driftedCandidate,
+    Buffer.concat([
+      committed,
+      Buffer.from("// intentional drift fixture\n", "utf8"),
+    ]),
+  );
   assertGeneratedTypesMatch(committed, await readFile(exactCandidate));
   try {
     assertGeneratedTypesMatch(committed, await readFile(driftedCandidate));
@@ -63,14 +109,21 @@ async function runSelfTest() {
   } catch (error) {
     if (!(error instanceof GeneratedTypesDriftError)) throw error;
   }
-  console.log("PASS: exact generated types are accepted and intentional drift is rejected");
+  console.log(
+    "PASS: exact generated types are accepted and intentional drift is rejected",
+  );
 }
 
 function run(command, args) {
   return new Promise((resolveRun, rejectRun) => {
     const child = spawn(command, args, {
       cwd: repositoryRoot,
-      env: process.env,
+      env: {
+        ...process.env,
+        DO_NOT_TRACK: "1",
+        SUPABASE_HOME: join(outputRoot, "supabase-home"),
+        SUPABASE_TELEMETRY_DISABLED: "1",
+      },
       shell: false,
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],
@@ -86,32 +139,49 @@ function run(command, args) {
       stderr += chunk;
     });
     child.once("error", rejectRun);
-    child.once("close", (code) => resolveRun({ code: code ?? 1, stdout, stderr }));
+    child.once("close", (code) =>
+      resolveRun({ code: code ?? 1, stdout, stderr }),
+    );
   });
 }
 
 async function generateFromLocalMigrations() {
   const temporaryProject = join(outputRoot, "supabase-project");
   await mkdir(temporaryProject, { recursive: true });
-  await cp(sourceProject, temporaryProject, {
+  await mkdir(join(outputRoot, "supabase-home"), { recursive: true });
+  await cp(sourceSupabase, join(temporaryProject, "supabase"), {
     recursive: true,
     filter: (source) => !source.includes(`${sep}.temp`),
   });
   const temporaryConfig = join(temporaryProject, "supabase", "config.toml");
   const configContents = await readFile(temporaryConfig, "utf8");
-  const uniqueProjectId = `zaiko-wp8-${randomUUID()}`;
-  const uniqueConfig = configContents.replace('project_id = "zaiko-wp7-harness"', `project_id = "${uniqueProjectId}"`);
+  const uniqueProjectId = `zaiko-wp19-${randomUUID()}`;
+  const uniqueConfig = configContents.replace(
+    'project_id = "zaiko-mane-general"',
+    `project_id = "${uniqueProjectId}"`,
+  );
   if (uniqueConfig === configContents) {
-    throw new Error("The temporary Supabase project identity was not replaced.");
+    throw new Error(
+      "The temporary Supabase project identity was not replaced.",
+    );
   }
   await writeFile(temporaryConfig, uniqueConfig, "utf8");
 
-  const supabaseCli = await realpath(join(repositoryRoot, "node_modules", "supabase", "dist", "supabase.js"));
+  const supabaseCli = await realpath(
+    join(repositoryRoot, "node_modules", "supabase", "dist", "supabase.js"),
+  );
   const cliInfo = await lstat(supabaseCli);
   if (!cliInfo.isFile() || cliInfo.isSymbolicLink()) {
     throw new Error("The Supabase CLI is not a regular file.");
   }
-  const cli = (args) => run(process.execPath, [supabaseCli, ...args, "--workdir", temporaryProject, "--yes"]);
+  const cli = (args) =>
+    run(process.execPath, [
+      supabaseCli,
+      ...args,
+      "--workdir",
+      temporaryProject,
+      "--yes",
+    ]);
   const excludedServices = [
     "realtime",
     "imgproxy",
@@ -131,14 +201,35 @@ async function generateFromLocalMigrations() {
   try {
     startAttempted = true;
     const start = await cli(["start", "--exclude", excludedServices]);
-    if (start.code !== 0) throw new Error("Local stack start failed; provider output is suppressed.");
+    if (start.code !== 0)
+      throw new Error(
+        "Local stack start failed; provider output is suppressed.",
+      );
     const reset = await cli(["db", "reset", "--local", "--no-seed"]);
-    if (reset.code !== 0) throw new Error("Local migration reset failed; provider output is suppressed.");
-    const generated = await cli(["gen", "types", "--local", "--lang", "typescript", "--schema", "public"]);
-    if (generated.code !== 0 || !generated.stdout.includes("export type Database")) {
-      throw new Error("Local database type generation failed; provider output is suppressed.");
+    if (reset.code !== 0)
+      throw new Error(
+        "Local migration reset failed; provider output is suppressed.",
+      );
+    const generated = await cli([
+      "gen",
+      "types",
+      "--local",
+      "--lang",
+      "typescript",
+      "--schema",
+      "public",
+    ]);
+    if (
+      generated.code !== 0 ||
+      !generated.stdout.includes("export type Database")
+    ) {
+      throw new Error(
+        "Local database type generation failed; provider output is suppressed.",
+      );
     }
-    const formatted = await prettier.format(generated.stdout.trim(), { parser: "typescript" });
+    const formatted = await prettier.format(generated.stdout.trim(), {
+      parser: "typescript",
+    });
     generatedFile = Buffer.from(`${generatedHeader}${formatted}`, "utf8");
   } catch (error) {
     failure = error;
@@ -146,7 +237,9 @@ async function generateFromLocalMigrations() {
     if (startAttempted) {
       const stopped = await cli(["stop", "--no-backup"]);
       if (stopped.code !== 0) {
-        stopFailure = new Error("Local stack cleanup failed; provider output is suppressed.");
+        stopFailure = new Error(
+          "Local stack cleanup failed; provider output is suppressed.",
+        );
       }
     }
   }
