@@ -21,7 +21,9 @@ export type ItemCoreError = Readonly<{
     | "invalid_unit"
     | "not_finite"
     | "negative"
-    | "count_requires_integer";
+    | "count_requires_integer"
+    | "too_large"
+    | "too_many_decimal_places";
   field: "name" | "unit" | "quantity" | "threshold";
 }>;
 export type Result<T> =

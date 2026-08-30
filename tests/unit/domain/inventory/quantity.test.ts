@@ -14,6 +14,34 @@ describe("inventory quantity validation", () => {
   });
   it("accepts decimal measurements", () =>
     expect(validateQuantity(1.25, "meter")).toEqual({ ok: true, value: 1.25 }));
+  it("enforces the persisted magnitude and decimal scale", () => {
+    expect(validateQuantity(99_999_999_999_999, "meter")).toEqual({
+      ok: true,
+      value: 99_999_999_999_999,
+    });
+    for (const value of [1e14, 1e20]) {
+      expect(validateQuantity(value, "meter")).toEqual({
+        ok: false,
+        error: { code: "too_large", field: "quantity" },
+      });
+    }
+    expect(validateQuantity(0.000001, "meter")).toEqual({
+      ok: true,
+      value: 0.000001,
+    });
+    expect(validateQuantity(0.0000001, "meter")).toEqual({
+      ok: false,
+      error: { code: "too_many_decimal_places", field: "quantity" },
+    });
+    expect(validateThreshold(1e14, "meter")).toEqual({
+      ok: false,
+      error: { code: "too_large", field: "threshold" },
+    });
+    expect(validateThreshold(0.0000001, "meter")).toEqual({
+      ok: false,
+      error: { code: "too_many_decimal_places", field: "threshold" },
+    });
+  });
   it("normalizes zero and negative zero", () => {
     expect(validateQuantity(0, "piece")).toEqual({ ok: true, value: 0 });
     expect(validateQuantity(-0, "piece")).toEqual({ ok: true, value: 0 });

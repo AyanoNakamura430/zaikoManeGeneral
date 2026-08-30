@@ -1,7 +1,11 @@
 import { getUnitDefinition, type UnitKind } from "./unit";
 
 export type QuantityErrorCode =
-  "not_finite" | "negative" | "count_requires_integer";
+  | "not_finite"
+  | "negative"
+  | "count_requires_integer"
+  | "too_large"
+  | "too_many_decimal_places";
 export type QuantityField = "quantity" | "threshold";
 export type QuantityError = Readonly<{
   code: QuantityErrorCode;
@@ -32,6 +36,18 @@ function validateAmount(
   if (!Number.isFinite(value))
     return { ok: false, error: { code: "not_finite", field } };
   if (value < 0) return { ok: false, error: { code: "negative", field } };
+  if (value >= 100_000_000_000_000)
+    return { ok: false, error: { code: "too_large", field } };
+  const decimal = value.toString().toLowerCase();
+  const [coefficient = "", exponentText] = decimal.split("e");
+  const exponent = exponentText === undefined ? 0 : Number(exponentText);
+  const unsigned = coefficient.replace(/^[+-]/, "");
+  const [integerPart = "", fractionalPart = ""] = unsigned.split(".");
+  const digits = `${integerPart}${fractionalPart}`;
+  const decimalPosition = integerPart.length + exponent;
+  const fractional = Math.max(0, digits.length - decimalPosition);
+  if (fractional > 6)
+    return { ok: false, error: { code: "too_many_decimal_places", field } };
   if (family === "count" && !Number.isInteger(value))
     return { ok: false, error: { code: "count_requires_integer", field } };
   return { ok: true, value: normalize(value) };
