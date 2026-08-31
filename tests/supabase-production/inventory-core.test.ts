@@ -3,7 +3,9 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { createSupabaseInventoryReadAdapter } from "../../src/adapters/supabase/supabase-inventory-read-adapter";
 import { createSupabaseAuthEligibilityAdapter } from "../../src/adapters/supabase/supabase-auth-eligibility-adapter";
+import { createSupabaseTrustedOnboardingAdapter } from "../../src/adapters/supabase/supabase-trusted-onboarding-adapter";
 import { loadAuthEligibility } from "../../src/application/auth/load-auth-eligibility";
+import { runTrustedOnboarding } from "../../src/application/auth/run-trusted-onboarding";
 import { normalizeCategoryNameKey } from "../../src/domain/category/category-name";
 import type { Database } from "../../src/infrastructure/supabase/database.generated";
 
@@ -21,6 +23,7 @@ if (!url || !publicKey || !secretKey)
 
 const options = { auth: { autoRefreshToken: false, persistSession: false } };
 const service = createClient(url, secretKey, options);
+const typedService = createClient<Database>(url, secretKey, options);
 const anonymous = createClient(url, publicKey, options);
 const users = {
   a: createClient(url, publicKey, options),
@@ -28,6 +31,12 @@ const users = {
   pending: createClient(url, publicKey, options),
   deleting: createClient(url, publicKey, options),
   missing: createClient(url, publicKey, options),
+  onboardingMissing: createClient(url, publicKey, options),
+  onboardingPending: createClient(url, publicKey, options),
+  onboardingActive: createClient(url, publicKey, options),
+  onboardingDeleting: createClient(url, publicKey, options),
+  onboardingConcurrent: createClient(url, publicKey, options),
+  onboardingPartial: createClient(url, publicKey, options),
 };
 const adapterUsers = {
   a: createClient<Database>(url, publicKey, options),
@@ -40,6 +49,12 @@ const eligibilityUsers = {
   pending: createClient<Database>(url, publicKey, options),
   deleting: createClient<Database>(url, publicKey, options),
   missing: createClient<Database>(url, publicKey, options),
+  onboardingMissing: createClient<Database>(url, publicKey, options),
+  onboardingPending: createClient<Database>(url, publicKey, options),
+  onboardingActive: createClient<Database>(url, publicKey, options),
+  onboardingDeleting: createClient<Database>(url, publicKey, options),
+  onboardingConcurrent: createClient<Database>(url, publicKey, options),
+  onboardingPartial: createClient<Database>(url, publicKey, options),
 };
 const ids = {
   a: "",
@@ -47,6 +62,25 @@ const ids = {
   pending: "",
   deleting: "",
   missing: "",
+  onboardingMissing: "",
+  onboardingPending: "",
+  onboardingActive: "",
+  onboardingDeleting: "",
+  onboardingConcurrent: "",
+  onboardingPartial: "",
+};
+const accessTokens = {
+  a: "",
+  b: "",
+  pending: "",
+  deleting: "",
+  missing: "",
+  onboardingMissing: "",
+  onboardingPending: "",
+  onboardingActive: "",
+  onboardingDeleting: "",
+  onboardingConcurrent: "",
+  onboardingPartial: "",
 };
 const password = "Local-only-password-123!";
 const randomUUID = () => globalThis.crypto.randomUUID();
@@ -70,6 +104,9 @@ beforeAll(async () => {
     });
     if (signedIn.error)
       throw new Error(`Fixture user ${name} could not sign in.`);
+    if (!signedIn.data.session)
+      throw new Error(`Fixture user ${name} has no session.`);
+    accessTokens[name] = signedIn.data.session.access_token;
     const eligibilitySignedIn = await eligibilityUsers[
       name
     ].auth.signInWithPassword({ email, password });
@@ -89,6 +126,10 @@ beforeAll(async () => {
     { user_id: ids.b, status: "active" },
     { user_id: ids.pending, status: "pending" },
     { user_id: ids.deleting, status: "deleting" },
+    { user_id: ids.onboardingPending, status: "pending" },
+    { user_id: ids.onboardingActive, status: "active" },
+    { user_id: ids.onboardingDeleting, status: "deleting" },
+    { user_id: ids.onboardingPartial, status: "pending" },
   ]);
   if (accounts.error) throw new Error("Fixture accounts could not be created.");
 });
@@ -380,6 +421,116 @@ describe("production Auth eligibility bootstrap", () => {
         ),
       ).resolves.toEqual({ ok: true, value: expected[name] });
     }
+  });
+});
+
+describe("production trusted onboarding", () => {
+  type OnboardingFixture =
+    | "onboardingMissing"
+    | "onboardingPending"
+    | "onboardingConcurrent"
+    | "onboardingPartial";
+  const invoke = (token?: string) =>
+    fetch(`${url}/functions/v1/trusted-onboarding`, {
+      method: "POST",
+      headers: {
+        apikey: publicKey,
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+  async function expectOnboarded(name: OnboardingFixture) {
+    const account = await typedService
+      .from("application_accounts")
+      .select("status")
+      .eq("user_id", ids[name])
+      .single();
+    expect(account.data).toEqual({ status: "active" });
+    const templates = await typedService
+      .from("category_templates")
+      .select("key,display_name,default_sort_order")
+      .order("default_sort_order");
+    const categories = await typedService
+      .from("categories")
+      .select("user_id,template_key,name,sort_order")
+      .eq("user_id", ids[name])
+      .order("sort_order");
+    expect(categories.data).toEqual(
+      templates.data?.map((template) => ({
+        user_id: ids[name],
+        template_key: template.key,
+        name: template.display_name,
+        sort_order: template.default_sort_order,
+      })),
+    );
+  }
+
+  it("rejects anonymous and deleting callers without changing account state", async () => {
+    expect((await invoke()).status).toBe(401);
+    expect((await invoke(accessTokens.onboardingDeleting)).status).toBe(409);
+    const account = await typedService
+      .from("application_accounts")
+      .select("status")
+      .eq("user_id", ids.onboardingDeleting)
+      .single();
+    expect(account.data).toEqual({ status: "deleting" });
+  });
+
+  it("creates or resumes onboarding idempotently with owner-isolated system categories", async () => {
+    for (const name of ["onboardingMissing", "onboardingPending"] as const) {
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const response = await invoke(accessTokens[name]);
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toEqual({ kind: "active" });
+      }
+      await expectOnboarded(name);
+    }
+  });
+
+  it("converges concurrent onboarding requests without duplicates", async () => {
+    const responses = await Promise.all(
+      Array.from({ length: 4 }, () =>
+        invoke(accessTokens.onboardingConcurrent),
+      ),
+    );
+    expect(responses.map(({ status }) => status)).toEqual([200, 200, 200, 200]);
+    for (const response of responses)
+      await expect(response.json()).resolves.toEqual({ kind: "active" });
+    await expectOnboarded("onboardingConcurrent");
+  });
+
+  it("resumes a partial pending checkpoint with existing system categories", async () => {
+    const templates = await typedService
+      .from("category_templates")
+      .select("key,display_name,default_sort_order")
+      .order("default_sort_order")
+      .limit(3);
+    expect(templates.data).toHaveLength(3);
+    const partial = await typedService.from("categories").insert(
+      (templates.data ?? []).map((template) => ({
+        user_id: ids.onboardingPartial,
+        template_key: template.key,
+        name: template.display_name,
+        name_key: template.display_name,
+        sort_order: template.default_sort_order,
+      })),
+    );
+    expect(partial.error).toBeNull();
+    const response = await invoke(accessTokens.onboardingPartial);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ kind: "active" });
+    await expectOnboarded("onboardingPartial");
+  });
+
+  it("treats an already active account as an idempotent success", async () => {
+    await expect(
+      runTrustedOnboarding(
+        createSupabaseTrustedOnboardingAdapter(
+          eligibilityUsers.onboardingActive,
+        ),
+      ),
+    ).resolves.toEqual({ ok: true, value: { kind: "active" } });
   });
 });
 

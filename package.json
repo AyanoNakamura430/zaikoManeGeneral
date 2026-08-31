@@ -11,8 +11,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx,json}\" \"tests/e2e/**/*.mjs\" \"playwright.config.mjs\" \"scripts/e2e-fixture-server.mjs\" \"scripts/playwright-*.mjs\"",
-    "format:write": "prettier --write \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx,json}\" \"tests/e2e/**/*.mjs\" \"playwright.config.mjs\" \"scripts/e2e-fixture-server.mjs\" \"scripts/playwright-*.mjs\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx,json}\" \"tests/e2e/**/*.mjs\" \"supabase/functions/**/*.{ts,json}\" \"playwright.config.mjs\" \"scripts/e2e-fixture-server.mjs\" \"scripts/playwright-*.mjs\"",
+    "format:write": "prettier --write \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx,json}\" \"tests/e2e/**/*.mjs\" \"supabase/functions/**/*.{ts,json}\" \"playwright.config.mjs\" \"scripts/e2e-fixture-server.mjs\" \"scripts/playwright-*.mjs\"",
     "lint": "eslint \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\" --max-warnings 0",
     "lint:gates": "node scripts/lint-gates.mjs",
     "test:database": "node scripts/supabase-harness.mjs",

@@ -2,7 +2,7 @@
 
 ## Status and Evidence Boundary
 
-The Phase 2 target architecture is approved and partially implemented through pure Domain modules, the provider-neutral Inventory and Auth eligibility Application boundaries, a repository-local production-schema migration, and Supabase Inventory-read and Auth-eligibility adapters verified in ephemeral Supabase. Auth eligibility uses the stored session only to detect presence, server-verifies the user, then reads the caller's Application Account under RLS. It distinguishes unauthenticated, reauthentication, verification, missing/pending onboarding, active, and deleting states without performing onboarding. The active entry graph remains the monolithic implementation described in [`CURRENT_STATE.md`](CURRENT_STATE.md); these Product adapters are not connected to a new application shell or screen yet.
+The Phase 2 target architecture is approved and partially implemented through pure Domain modules, provider-neutral Inventory, Auth eligibility, and trusted-onboarding Application boundaries, a repository-local production-schema migration, Supabase browser adapters, and a trusted-onboarding Edge Function verified in ephemeral Supabase. Auth eligibility uses the stored session only to detect presence, server-verifies the user, then reads the caller's Application Account under RLS. The trusted Function independently verifies the caller, keeps elevated credentials in the server runtime, and idempotently converges missing and pending accounts to active after materializing the exact six system Categories; deleting accounts remain closed. The active entry graph remains the monolithic implementation described in [`CURRENT_STATE.md`](CURRENT_STATE.md); these Product boundaries are not connected to a new application shell or screen yet.
 
 Live Supabase schema, data, RLS, GRANT, Storage, Auth settings, platform versions, and production safety have not been verified. Exact SQL, policies, functions, dependencies, and external configuration require separate implementation plans and approval.
 
@@ -39,9 +39,9 @@ The Hybrid attribute contract and relational direction are owned by [`DATABASE.m
 
 ## Trusted Operation Boundary
 
-Browser clients never receive a service-role or secret credential. Verified onboarding, durable image cleanup, and account deletion run through an approved trusted boundary. Custom application objects are not added to Supabase-managed `auth` or `storage` schemas.
+Browser clients never receive a service-role or secret credential. Verified onboarding runs through the repository's authenticated Supabase Edge Function; durable image cleanup and account deletion still require separately approved trusted implementations. Custom application objects are not added to Supabase-managed `auth` or `storage` schemas.
 
-Any privileged function must be separately reviewed for schema exposure, caller verification, grants, search path, idempotency, and failure recovery. The exact Edge, server, or private-function implementation remains unselected.
+Any privileged function must be separately reviewed for schema exposure, caller verification, grants, search path, idempotency, and failure recovery. Trusted onboarding now uses the approved Edge Function boundary; the exact durable image-cleanup and account-deletion runtimes remain unselected.
 
 ## Error and Result Boundaries
 

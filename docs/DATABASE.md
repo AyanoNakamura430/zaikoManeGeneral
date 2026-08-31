@@ -65,7 +65,7 @@ Changing this normalization contract after persisted Categories exist is a data-
 
 System-derived Categories have fixed name, deletion, and order behavior; the user may change their approved preset color. Custom Categories permit name, color, order, and deletion. Frontend clients cannot create arbitrary system-derived rows or change Template linkage.
 
-Trusted onboarding creates the six system-derived Categories idempotently after verification. The exact trusted runtime is not yet selected.
+Trusted onboarding creates the six system-derived Categories idempotently after verification. The approved runtime is the authenticated `trusted-onboarding` Supabase Edge Function. It derives identity from the caller's verified Auth token, never accepts a caller-selected owner ID, and keeps elevated credentials in the server runtime. Missing accounts are inserted as pending; pending work is safe to retry; activation occurs only after the exact six Categories are verified. Active is an idempotent success and deleting is never reactivated. This repository implementation is locally verified but has not been deployed to a hosted project.
 
 ### Items
 

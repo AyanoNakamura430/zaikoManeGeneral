@@ -57,7 +57,7 @@ const assertStage = (name, result) => {
   if (result.code !== 0) throw new Error(`${name} failed; captured provider output is intentionally suppressed.`);
   console.log(`PASS: ${name}`);
 };
-const excluded = ["realtime","imgproxy","postgres-meta","studio","edge-runtime","logflare","vector","supavisor","mailpit"].join(",");
+const excluded = ["realtime","imgproxy","postgres-meta","studio","logflare","vector","supavisor","mailpit"].join(",");
 let startAttempted = false, failure, stopFailure;
 try {
   startAttempted = true;

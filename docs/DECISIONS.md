@@ -116,3 +116,11 @@ Record only accepted decisions. Keep proposals and unresolved questions in their
 **Decision:** Build the general schema beside the legacy table, backfill deterministically, verify ownership and behavior, use a controlled write freeze and final delta, retain the legacy data read-only for a rollback window, and require separate approval for destructive cleanup.
 
 **Reasons:** In-place conversion cannot safely handle unknown live constraints, missing values, legacy image semantics, or yarn-specific data without an evidence-based rollback path.
+
+## Decision 018 — Trusted onboarding Edge Function boundary
+
+**Status:** Accepted
+
+**Decision:** Run verified onboarding through an authenticated Supabase Edge Function. Derive identity from the verified caller rather than request data, keep elevated credentials in the server runtime, and converge missing or pending accounts idempotently to active only after the exact six system Categories exist. Treat an already active account as success and never reactivate a deleting account.
+
+**Reasons:** The browser cannot safely hold elevated credentials or create protected system data. A pending checkpoint makes multi-request partial failure retryable without falsely granting Inventory access, while the Edge Function keeps the privileged boundary explicit and locally testable.
