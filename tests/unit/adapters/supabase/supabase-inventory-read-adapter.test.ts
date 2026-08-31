@@ -4,11 +4,11 @@ import {
   AuthSessionMissingError,
 } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
+import { createSupabaseInventoryReadAdapter } from "../../../../src/adapters/supabase/supabase-inventory-read-adapter";
 import {
   classifySupabaseAuthError,
   classifySupabaseQueryError,
-  createSupabaseInventoryReadAdapter,
-} from "../../../../src/adapters/supabase/supabase-inventory-read-adapter";
+} from "../../../../src/adapters/supabase/supabase-error-mapping";
 import type { Database } from "../../../../src/infrastructure/supabase/database.generated";
 import type { SupabaseClient } from "@supabase/supabase-js";
 

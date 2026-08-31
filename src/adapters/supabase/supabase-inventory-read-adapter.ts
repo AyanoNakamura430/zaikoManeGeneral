@@ -1,9 +1,4 @@
-import {
-  isAuthRetryableFetchError,
-  isAuthError,
-  isAuthSessionMissingError,
-  type SupabaseClient,
-} from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { InventoryListItem } from "../../domain/inventory/inventory-list-item";
 import type { Database } from "../../infrastructure/supabase/database.generated";
 import type {
@@ -11,6 +6,11 @@ import type {
   ApplicationResult,
 } from "../../ports/application-result";
 import { decodeInventoryListItem } from "./supabase-inventory-row-decoder";
+import {
+  classifySupabaseAuthError,
+  classifySupabaseQueryError,
+  classifySupabaseThrownError,
+} from "./supabase-error-mapping";
 
 type ReadResult = ApplicationResult<readonly InventoryListItem[]>;
 
@@ -38,45 +38,6 @@ const failure = (code: ApplicationErrorCode): ReadResult => ({
   ok: false,
   error: { code },
 });
-
-export function classifySupabaseAuthError(
-  error: unknown,
-): ApplicationErrorCode {
-  if (isAuthRetryableFetchError(error)) return "network_failure";
-  if (isAuthSessionMissingError(error)) return "authentication_expired";
-  if (error && typeof error === "object" && "status" in error) {
-    const status = error.status;
-    if (status === 401 || status === 403) return "authentication_expired";
-  }
-  return "unavailable";
-}
-
-export function classifySupabaseQueryError(
-  error: unknown,
-  status: number,
-): ApplicationErrorCode {
-  if (status === 401 || status === 403) return "authentication_expired";
-  if (
-    status === 0 ||
-    (error !== null &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "PGRST000")
-  )
-    return "network_failure";
-  return "unavailable";
-}
-
-function classifyThrownError(error: unknown): ApplicationErrorCode {
-  if (isAuthError(error)) return classifySupabaseAuthError(error);
-  if (error instanceof TypeError) return "network_failure";
-  if (error && typeof error === "object" && "status" in error) {
-    const status = error.status;
-    if (typeof status === "number")
-      return classifySupabaseQueryError(error, status);
-  }
-  return "unavailable";
-}
 
 export function createSupabaseInventoryReadAdapter(
   client: SupabaseClient<Database>,
@@ -107,7 +68,7 @@ export function createSupabaseInventoryReadAdapter(
         }
         return { ok: true, value: Object.freeze(items) };
       } catch (error) {
-        return failure(classifyThrownError(error));
+        return failure(classifySupabaseThrownError(error));
       }
     },
   });

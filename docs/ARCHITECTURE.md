@@ -2,7 +2,7 @@
 
 ## Status and Evidence Boundary
 
-The Phase 2 target architecture is approved and partially implemented through pure Domain modules, the provider-neutral Inventory query, filter, sort, and read Application boundary, a repository-local production-schema migration, and a Supabase Inventory read adapter verified in ephemeral Supabase. The active entry graph remains the monolithic implementation described in [`CURRENT_STATE.md`](CURRENT_STATE.md); the Product adapter is not connected to a new application shell or screen yet.
+The Phase 2 target architecture is approved and partially implemented through pure Domain modules, the provider-neutral Inventory and Auth eligibility Application boundaries, a repository-local production-schema migration, and Supabase Inventory-read and Auth-eligibility adapters verified in ephemeral Supabase. Auth eligibility uses the stored session only to detect presence, server-verifies the user, then reads the caller's Application Account under RLS. It distinguishes unauthenticated, reauthentication, verification, missing/pending onboarding, active, and deleting states without performing onboarding. The active entry graph remains the monolithic implementation described in [`CURRENT_STATE.md`](CURRENT_STATE.md); these Product adapters are not connected to a new application shell or screen yet.
 
 Live Supabase schema, data, RLS, GRANT, Storage, Auth settings, platform versions, and production safety have not been verified. Exact SQL, policies, functions, dependencies, and external configuration require separate implementation plans and approval.
 

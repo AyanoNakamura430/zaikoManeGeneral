@@ -2,6 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { createSupabaseInventoryReadAdapter } from "../../src/adapters/supabase/supabase-inventory-read-adapter";
+import { createSupabaseAuthEligibilityAdapter } from "../../src/adapters/supabase/supabase-auth-eligibility-adapter";
+import { loadAuthEligibility } from "../../src/application/auth/load-auth-eligibility";
 import { normalizeCategoryNameKey } from "../../src/domain/category/category-name";
 import type { Database } from "../../src/infrastructure/supabase/database.generated";
 
@@ -25,13 +27,27 @@ const users = {
   b: createClient(url, publicKey, options),
   pending: createClient(url, publicKey, options),
   deleting: createClient(url, publicKey, options),
+  missing: createClient(url, publicKey, options),
 };
 const adapterUsers = {
   a: createClient<Database>(url, publicKey, options),
   b: createClient<Database>(url, publicKey, options),
 };
 const adapterAnonymous = createClient<Database>(url, publicKey, options);
-const ids = { a: "", b: "", pending: "", deleting: "" };
+const eligibilityUsers = {
+  a: createClient<Database>(url, publicKey, options),
+  b: createClient<Database>(url, publicKey, options),
+  pending: createClient<Database>(url, publicKey, options),
+  deleting: createClient<Database>(url, publicKey, options),
+  missing: createClient<Database>(url, publicKey, options),
+};
+const ids = {
+  a: "",
+  b: "",
+  pending: "",
+  deleting: "",
+  missing: "",
+};
 const password = "Local-only-password-123!";
 const randomUUID = () => globalThis.crypto.randomUUID();
 const prefix = randomUUID();
@@ -54,6 +70,11 @@ beforeAll(async () => {
     });
     if (signedIn.error)
       throw new Error(`Fixture user ${name} could not sign in.`);
+    const eligibilitySignedIn = await eligibilityUsers[
+      name
+    ].auth.signInWithPassword({ email, password });
+    if (eligibilitySignedIn.error)
+      throw new Error(`Eligibility fixture user ${name} could not sign in.`);
     if (name === "a" || name === "b") {
       const adapterSignedIn = await adapterUsers[name].auth.signInWithPassword({
         email,
@@ -320,6 +341,45 @@ describe("production Inventory read adapter", () => {
       ok: false,
       error: { code: "authentication_expired" },
     });
+  });
+});
+
+describe("production Auth eligibility bootstrap", () => {
+  it("distinguishes anonymous and owner-scoped application-account states", async () => {
+    await expect(
+      loadAuthEligibility(
+        createSupabaseAuthEligibilityAdapter(adapterAnonymous),
+      ),
+    ).resolves.toEqual({
+      ok: true,
+      value: { kind: "unauthenticated" },
+    });
+
+    const expected = {
+      missing: {
+        kind: "onboarding_required",
+        email: `${prefix}-missing@example.test`,
+        reason: "missing_account",
+      },
+      pending: {
+        kind: "onboarding_required",
+        email: `${prefix}-pending@example.test`,
+        reason: "pending_account",
+      },
+      a: { kind: "active", email: `${prefix}-a@example.test` },
+      b: { kind: "active", email: `${prefix}-b@example.test` },
+      deleting: {
+        kind: "deleting",
+        email: `${prefix}-deleting@example.test`,
+      },
+    } as const;
+    for (const name of Object.keys(expected) as Array<keyof typeof expected>) {
+      await expect(
+        loadAuthEligibility(
+          createSupabaseAuthEligibilityAdapter(eligibilityUsers[name]),
+        ),
+      ).resolves.toEqual({ ok: true, value: expected[name] });
+    }
   });
 });
 
