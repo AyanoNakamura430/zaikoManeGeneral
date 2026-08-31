@@ -124,3 +124,11 @@ Record only accepted decisions. Keep proposals and unresolved questions in their
 **Decision:** Run verified onboarding through an authenticated Supabase Edge Function. Derive identity from the verified caller rather than request data, keep elevated credentials in the server runtime, and converge missing or pending accounts idempotently to active only after the exact six system Categories exist. Treat an already active account as success and never reactivate a deleting account.
 
 **Reasons:** The browser cannot safely hold elevated credentials or create protected system data. A pending checkpoint makes multi-request partial failure retryable without falsely granting Inventory access, while the Edge Function keeps the privileged boundary explicit and locally testable.
+
+## Decision 019 — Browser Supabase public-key transition
+
+**Status:** Accepted
+
+**Decision:** New Product browser composition prefers a Supabase publishable key, temporarily accepts the legacy anon key as fallback, and rejects identifiable secret or service-role credentials before client creation. Keep environment reading and singleton ownership at the future application composition root.
+
+**Reasons:** Supabase is replacing legacy anon/service-role JWT keys with publishable/secret keys. A dual public-key transition preserves the current local setup while preventing the new browser boundary from normalizing elevated credentials or coupling testable configuration logic to module initialization.

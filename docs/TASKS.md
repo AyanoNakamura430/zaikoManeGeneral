@@ -85,6 +85,7 @@ Each work package requires its own bounded implementation plan and approval. Exa
 - [x] WP22: Trusted onboarding Edge Function, Application boundary, and local integration gate
 - [x] WP23: Provider-neutral Auth bootstrap orchestration core
 - [x] WP24: Auth bootstrap composition boundary and local integration gate
+- [x] WP25: Browser Supabase client configuration foundation
 
 ## Phase 5 — Test and Review
 

@@ -29,7 +29,7 @@ Supported runtime versions have not been formally documented. With dependencies 
 npm run dev
 ```
 
-The application references `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Use a local ignored environment file where appropriate. Never commit or publish environment values or secrets.
+The frozen legacy application references `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. New Product composition will prefer `VITE_SUPABASE_PUBLISHABLE_KEY` while retaining the anon key as a temporary fallback. Use a local ignored environment file where appropriate. Never commit or publish environment values or secrets.
 
 ## Documentation
 

@@ -3,7 +3,7 @@
 ## Current known state
 
 - No Vercel configuration found; the current `main` branch tracks `origin/main` (remote URL intentionally omitted here); deployment procedure remains unverified.
-- Application references `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+- The frozen legacy application references `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. The new browser-client contract prefers optional `VITE_SUPABASE_PUBLISHABLE_KEY` and retains `VITE_SUPABASE_ANON_KEY` as a temporary legacy fallback; no Product composition root reads either contract yet.
 - `.env.local` is ignored; never display or commit its values.
 - The artifact-safe production build check succeeds locally; deployment-environment build behavior remains unverified.
 
