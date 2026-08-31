@@ -84,6 +84,7 @@ Each work package requires its own bounded implementation plan and approval. Exa
 - [x] WP21: Auth and Application Account eligibility bootstrap
 - [x] WP22: Trusted onboarding Edge Function, Application boundary, and local integration gate
 - [x] WP23: Provider-neutral Auth bootstrap orchestration core
+- [x] WP24: Auth bootstrap composition boundary and local integration gate
 
 ## Phase 5 — Test and Review
 

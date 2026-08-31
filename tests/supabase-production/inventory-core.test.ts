@@ -6,6 +6,7 @@ import { createSupabaseAuthEligibilityAdapter } from "../../src/adapters/supabas
 import { createSupabaseTrustedOnboardingAdapter } from "../../src/adapters/supabase/supabase-trusted-onboarding-adapter";
 import { loadAuthEligibility } from "../../src/application/auth/load-auth-eligibility";
 import { runTrustedOnboarding } from "../../src/application/auth/run-trusted-onboarding";
+import { createAuthBootstrap } from "../../src/composition/auth/create-auth-bootstrap";
 import { normalizeCategoryNameKey } from "../../src/domain/category/category-name";
 import type { Database } from "../../src/infrastructure/supabase/database.generated";
 
@@ -37,6 +38,7 @@ const users = {
   onboardingDeleting: createClient(url, publicKey, options),
   onboardingConcurrent: createClient(url, publicKey, options),
   onboardingPartial: createClient(url, publicKey, options),
+  compositionMissing: createClient(url, publicKey, options),
 };
 const adapterUsers = {
   a: createClient<Database>(url, publicKey, options),
@@ -55,6 +57,7 @@ const eligibilityUsers = {
   onboardingDeleting: createClient<Database>(url, publicKey, options),
   onboardingConcurrent: createClient<Database>(url, publicKey, options),
   onboardingPartial: createClient<Database>(url, publicKey, options),
+  compositionMissing: createClient<Database>(url, publicKey, options),
 };
 const ids = {
   a: "",
@@ -68,6 +71,7 @@ const ids = {
   onboardingDeleting: "",
   onboardingConcurrent: "",
   onboardingPartial: "",
+  compositionMissing: "",
 };
 const accessTokens = {
   a: "",
@@ -81,6 +85,7 @@ const accessTokens = {
   onboardingDeleting: "",
   onboardingConcurrent: "",
   onboardingPartial: "",
+  compositionMissing: "",
 };
 const password = "Local-only-password-123!";
 const randomUUID = () => globalThis.crypto.randomUUID();
@@ -421,6 +426,32 @@ describe("production Auth eligibility bootstrap", () => {
         ),
       ).resolves.toEqual({ ok: true, value: expected[name] });
     }
+  });
+});
+
+describe("production Auth bootstrap composition", () => {
+  it("converges a missing account through the injected browser client", async () => {
+    await expect(
+      createAuthBootstrap(eligibilityUsers.compositionMissing).run(),
+    ).resolves.toEqual({
+      kind: "resolved",
+      eligibility: {
+        kind: "active",
+        email: `${prefix}-compositionmissing@example.test`,
+      },
+    });
+
+    const account = await typedService
+      .from("application_accounts")
+      .select("status")
+      .eq("user_id", ids.compositionMissing)
+      .single();
+    expect(account.data).toEqual({ status: "active" });
+    const categories = await typedService
+      .from("categories")
+      .select("id")
+      .eq("user_id", ids.compositionMissing);
+    expect(categories.data).toHaveLength(6);
   });
 });
 
